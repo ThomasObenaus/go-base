@@ -11,7 +11,7 @@ help: ## Prints the help
 
 test: sep ## Runs all unittests and generates a coverage report.
 	@echo "--> Run the unit-tests"
-	@go test ./logging -covermode=count -coverprofile=coverage.out
+	@go test ./buildinfo ./logging -covermode=count -coverprofile=coverage.out
 
 sep:
 	@echo "----------------------------------------------------------------------------------"
