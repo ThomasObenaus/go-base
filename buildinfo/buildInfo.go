@@ -3,6 +3,7 @@ package buildinfo
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 // BuildInfo contains information about the build of sokar.
@@ -15,12 +16,33 @@ type BuildInfo struct {
 
 // Print prints the build information using the given print function
 func (bi *BuildInfo) Print(printFun func(format string, a ...interface{}) (n int, err error)) {
+
+	version := strings.TrimSpace(bi.Version)
+	if len(version) == 0 {
+		version = "n/a"
+	}
+
+	buildTime := strings.TrimSpace(bi.BuildTime)
+	if len(buildTime) == 0 {
+		buildTime = "n/a"
+	}
+
+	revision := strings.TrimSpace(bi.Revision)
+	if len(revision) == 0 {
+		revision = "n/a"
+	}
+
+	branch := strings.TrimSpace(bi.Branch)
+	if len(branch) == 0 {
+		branch = "n/a"
+	}
+
 	printFun("-----------------------------------------------------------------\n")
 	printFun("BuildInfo\n")
 	printFun("-----------------------------------------------------------------\n")
-	printFun("\tVersion:\t%s\n", bi.Version)
-	printFun("\tBuild-Time:\t%s\n", bi.BuildTime)
-	printFun("\tRevision:\t%s on %s\n", bi.Revision, bi.Branch)
+	printFun("\tVersion:\t%s\n", version)
+	printFun("\tBuild-Time:\t%s\n", buildTime)
+	printFun("\tRevision:\t%s on %s\n", revision, branch)
 	printFun("-----------------------------------------------------------------\n")
 }
 
