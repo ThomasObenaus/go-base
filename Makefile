@@ -11,7 +11,7 @@ help: ## Prints the help
 
 test: sep ## Runs all unittests and generates a coverage report.
 	@echo "--> Run the unit-tests"
-	@go test ./config ./buildinfo ./logging -covermode=count -coverprofile=coverage.out
+	@go test ./health ./shutdown ./config ./buildinfo ./logging -covermode=count -coverprofile=coverage.out
 
 gen-mocks: sep ## Generates test doubles (mocks).
 	@echo "--> generate mocks (github.com/golang/mock/gomock is required for this)"
