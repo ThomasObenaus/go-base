@@ -69,6 +69,11 @@ func (e Entry) String() string {
 	return fmt.Sprintf("--%s (-%s) [default:%v (%T)]\t- %s", e.name, e.flagShortName, e.defaultValue, e.defaultValue, e.usage)
 }
 
+// Name provides the specified name for this entry
+func (e Entry) Name() string {
+	return e.name
+}
+
 func checkViper(vp *viper.Viper, entry Entry) error {
 	if vp == nil {
 		return fmt.Errorf("Viper is nil")
