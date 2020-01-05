@@ -1,7 +1,7 @@
 #.DEFAULT_GOAL := all
 name := "go-base"
 
-all: tools test build finish
+all: tools test finish
 
 # This target (taken from: https://gist.github.com/prwhite/8168133) is an easy way to print out a usage/ help of all make targets.
 # For all make targets the text after \#\# will be printed.
