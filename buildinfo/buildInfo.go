@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// BuildInfo contains information about the build of sokar.
+// BuildInfo contains information about the build.
 type BuildInfo struct {
 	Version   string `json:"version,omitempty"`
 	BuildTime string `json:"build_time,omitempty"`
