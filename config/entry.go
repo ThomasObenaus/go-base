@@ -21,28 +21,48 @@ type Entry struct {
 	bindEnv bool
 }
 
-// NewEntry creates a new Entry that is available as flag, config file entry and environment variable
-func NewEntry(name, flagShortName, usage string, defaultValue interface{}) Entry {
-	return Entry{
-		name:          name,
-		usage:         usage,
-		flagShortName: flagShortName,
-		defaultValue:  defaultValue,
-		bindFlag:      true,
-		bindEnv:       true,
+// Option represents an option for the Scaler
+type Option func(e *Entry)
+
+// Default specifies a default value
+func Default(value interface{}) Option {
+	return func(e *Entry) {
+		e.defaultValue = value
 	}
 }
 
-// NewEntryFull creates a new Entry it can be configured if the entry shall be available as flag or env var
-func NewEntryFull(name, flagShortName, usage string, defaultValue interface{}, bindFlag, bindEnv bool) Entry {
-	return Entry{
+// ShortName specifies the shorthand (one-letter) flag name
+func ShortName(fShort string) Option {
+	return func(e *Entry) {
+		e.flagShortName = fShort
+	}
+}
+
+// Bind enables/ disables binding of flag and env var
+func Bind(flag, env bool) Option {
+	return func(e *Entry) {
+		e.bindFlag = flag
+		e.bindEnv = env
+	}
+}
+
+// NewEntry creates a new Entry that is available as flag, config file entry and environment variable
+func NewEntry(name, usage string, options ...Option) Entry {
+	entry := Entry{
 		name:          name,
 		usage:         usage,
-		flagShortName: flagShortName,
-		defaultValue:  defaultValue,
-		bindFlag:      bindFlag,
-		bindEnv:       bindEnv,
+		flagShortName: "",
+		defaultValue:  nil,
+		bindFlag:      true,
+		bindEnv:       true,
 	}
+
+	// apply the options
+	for _, opt := range options {
+		opt(&entry)
+	}
+
+	return entry
 }
 
 func (e Entry) String() string {
@@ -72,8 +92,10 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		return fmt.Errorf("Name is missing")
 	}
 
+	// no default value availabl -> we can't deduce the type
 	if entry.defaultValue == nil {
-		return fmt.Errorf("Default Value is missing")
+		flagSet.StringP(entry.name, entry.flagShortName, "", entry.usage)
+		return nil
 	}
 
 	switch entry.defaultValue.(type) {
@@ -100,10 +122,10 @@ func setDefault(vp *viper.Viper, entry Entry) error {
 	if err := checkViper(vp, entry); err != nil {
 		return err
 	}
-	if entry.defaultValue == nil {
-		return fmt.Errorf("Default Value is missing")
+
+	if entry.defaultValue != nil {
+		vp.SetDefault(entry.name, entry.defaultValue)
 	}
-	vp.SetDefault(entry.name, entry.defaultValue)
 
 	return nil
 }

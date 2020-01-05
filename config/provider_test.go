@@ -29,19 +29,30 @@ func Test_NewProvider(t *testing.T) {
 
 func ExampleNewProvider() {
 	var configEntries []Entry
-	configEntries = append(configEntries, NewEntry("port", "p", "the port to listen to", 8080))
-	configEntries = append(configEntries, NewEntry("db-url", "u", "the address of the data base", ""))
-	configEntries = append(configEntries, NewEntry("db-reconnect", "r", "enable automatic reconnect to the data base", false))
+
+	configEntries = append(configEntries, NewEntry("port", "the port to listen to", Default(8080), ShortName("p")))
+	// no default value for this parameter --> thus it can be treated as a required one
+	// to check if it was set by the user one can just call provider.IsSet("db-url")
+	configEntries = append(configEntries, NewEntry("db-url", "the address of the data base"))
+	configEntries = append(configEntries, NewEntry("db-reconnect", "enable automatic reconnect to the data base", Default(false)))
 
 	provider := NewProvider(configEntries, "my-config", "MY_APP")
-	args := []string{"-p=12000"}
+	args := []string{"--db-url=http://localhost"}
+
 	err := provider.ReadConfig(args)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("%s", provider)
+	port := provider.GetInt("port")
+	// check for mandatory parameter
+	if !provider.IsSet("db-url") {
+		panic(fmt.Errorf("Parameter '--db-url' is missing"))
+	}
+	dbURL := provider.GetString("db-url")
+	dbReconnect := provider.GetBool("db-reconnect")
 
+	fmt.Printf("port=%d, dbURL=%s, dbReconnect=%t", port, dbURL, dbReconnect)
 	// Output:
-	// my-config: map[db-reconnect:false db-url: port:12000]
+	// port=8080, dbURL=http://localhost, dbReconnect=false
 }

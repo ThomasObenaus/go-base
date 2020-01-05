@@ -13,25 +13,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_NewEntry(t *testing.T) {
+func Test_NewEntry_SimpleNoDefault(t *testing.T) {
 
-	entry := NewEntry("help", "h", "Print some help", "")
+	entry := NewEntry("help", "Print some help")
 	assert.True(t, entry.bindEnv)
 	assert.True(t, entry.bindFlag)
 	assert.Equal(t, "help", entry.name)
-	assert.Equal(t, "h", entry.flagShortName)
 	assert.Equal(t, "Print some help", entry.usage)
+	assert.Nil(t, entry.defaultValue)
+	assert.Empty(t, entry.flagShortName)
 }
 
-func Test_NewEntryFull(t *testing.T) {
+func Test_NewEntry_SimpleWithDefault(t *testing.T) {
 
-	entry := NewEntryFull("help", "h", "Print some help", "?!", false, false)
+	entry := NewEntry("port", "the port", Default(8080))
+	assert.True(t, entry.bindEnv)
+	assert.True(t, entry.bindFlag)
+	assert.Equal(t, "port", entry.name)
+	assert.Equal(t, "the port", entry.usage)
+	assert.Equal(t, 8080, entry.defaultValue)
+	assert.Empty(t, entry.flagShortName)
+}
+
+func Test_NewEntry_Full(t *testing.T) {
+
+	entry := NewEntry("port", "the port", Default(8080), ShortName("p"), Bind(false, false))
 	assert.False(t, entry.bindEnv)
 	assert.False(t, entry.bindFlag)
-	assert.Equal(t, "help", entry.name)
-	assert.Equal(t, "h", entry.flagShortName)
-	assert.Equal(t, "Print some help", entry.usage)
-	assert.Equal(t, "?!", entry.defaultValue)
+	assert.Equal(t, "port", entry.name)
+	assert.Equal(t, "the port", entry.usage)
+	assert.Equal(t, "p", entry.flagShortName)
+	assert.Equal(t, 8080, entry.defaultValue)
 }
 
 func Test_CheckViper(t *testing.T) {
@@ -67,17 +79,7 @@ func Test_SetDefault_OK(t *testing.T) {
 	assert.NotNil(t, vp.GetInt(cfgE.name))
 	assert.Equal(t, cfgE.defaultValue, vp.GetInt(cfgE.name))
 }
-func Test_SetDefault_Fail(t *testing.T) {
 
-	vp := viper.New()
-	require.NotNil(t, vp)
-
-	cfgE := Entry{
-		name: "bla",
-	}
-	err := setDefault(vp, cfgE)
-	assert.Error(t, err)
-}
 func Test_RegisterEnv_OK(t *testing.T) {
 
 	envPrefix := "ABCD"
@@ -134,9 +136,6 @@ func Test_RegisterFlag_Fail(t *testing.T) {
 	err = registerFlag(flagSet, cfgE)
 	assert.Error(t, err)
 
-	cfgE.name = "flag1"
-	err = registerFlag(flagSet, cfgE)
-	assert.Error(t, err)
 }
 
 func Test_RegisterFlag_Ok(t *testing.T) {
@@ -207,7 +206,7 @@ func Test_RegisterFlag_Ok(t *testing.T) {
 }
 
 func ExampleNewEntry() {
-	entry := NewEntry("port", "p", "The port of the service", 8080)
+	entry := NewEntry("port", "The port of the service", Default(8080), ShortName("p"))
 	fmt.Printf("%s", entry)
 	// Output:
 	// --port (-p) [default:8080 (int)]	- The port of the service
