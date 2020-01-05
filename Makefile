@@ -13,6 +13,12 @@ test: sep ## Runs all unittests and generates a coverage report.
 	@echo "--> Run the unit-tests"
 	@go test ./config ./buildinfo ./logging -covermode=count -coverprofile=coverage.out
 
+gen-mocks: sep ## Generates test doubles (mocks).
+	@echo "--> generate mocks (github.com/golang/mock/gomock is required for this)"
+	@go get github.com/golang/mock/gomock
+	@go install github.com/golang/mock/mockgen
+	@mockgen -source=health/check.go -destination test/mocks/health/mock_check.go
+
 sep:
 	@echo "----------------------------------------------------------------------------------"
 
