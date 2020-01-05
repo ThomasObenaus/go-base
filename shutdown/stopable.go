@@ -1,4 +1,4 @@
-package lifecycle
+package shutdown
 
 // Stopable is a interface for runnable sokar components
 type Stopable interface {
