@@ -21,25 +21,25 @@ type Entry struct {
 	bindEnv bool
 }
 
-// Option represents an option for the Scaler
-type Option func(e *Entry)
+// EntryOption represents an option for the Entry
+type EntryOption func(e *Entry)
 
 // Default specifies a default value
-func Default(value interface{}) Option {
+func Default(value interface{}) EntryOption {
 	return func(e *Entry) {
 		e.defaultValue = value
 	}
 }
 
 // ShortName specifies the shorthand (one-letter) flag name
-func ShortName(fShort string) Option {
+func ShortName(fShort string) EntryOption {
 	return func(e *Entry) {
 		e.flagShortName = fShort
 	}
 }
 
 // Bind enables/ disables binding of flag and env var
-func Bind(flag, env bool) Option {
+func Bind(flag, env bool) EntryOption {
 	return func(e *Entry) {
 		e.bindFlag = flag
 		e.bindEnv = env
@@ -47,7 +47,7 @@ func Bind(flag, env bool) Option {
 }
 
 // NewEntry creates a new Entry that is available as flag, config file entry and environment variable
-func NewEntry(name, usage string, options ...Option) Entry {
+func NewEntry(name, usage string, options ...EntryOption) Entry {
 	entry := Entry{
 		name:          name,
 		usage:         usage,

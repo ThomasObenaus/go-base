@@ -25,6 +25,26 @@ func Test_NewProvider(t *testing.T) {
 	assert.Equal(t, envPrefix, provider.envPrefix)
 	assert.NoError(t, err)
 	assert.Empty(t, provider.AllKeys())
+	assert.Equal(t, "config-file", provider.configFileEntry.name)
+	assert.Empty(t, provider.configFileEntry.flagShortName)
+}
+
+func Test_NewProviderOverrideCfgFile(t *testing.T) {
+
+	// GIVEN
+	var configEntries []Entry
+	configName := "testcfg"
+	envPrefix := "TST"
+
+	// WHEN
+	provider := NewProvider(configEntries, configName, envPrefix, CfgFile("cfg-f", "f"))
+
+	// THEN
+	assert.NotNil(t, provider.pFlagSet)
+	assert.NotNil(t, provider.Viper)
+	assert.Equal(t, envPrefix, provider.envPrefix)
+	assert.Equal(t, "cfg-f", provider.configFileEntry.name)
+	assert.Equal(t, "f", provider.configFileEntry.flagShortName)
 }
 
 func ExampleNewProvider() {
