@@ -9,7 +9,7 @@ import (
 func Test_ReadCfgFile(t *testing.T) {
 
 	// GIVEN
-	configFilename := "../test/config.yaml"
+	configFilename := "../test/data/config.yaml"
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage"))
 	entries = append(entries, NewEntry("test2", "usage"))
