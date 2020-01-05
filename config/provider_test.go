@@ -83,7 +83,7 @@ func ExampleNewProvider_withConfigFile() {
 	configEntries = append(configEntries, NewEntry("port", "the port to listen to", Default(8080), ShortName("p")))
 
 	provider := NewProvider(configEntries, "my-config", "MY_APP")
-	args := []string{"--config-file=cfg.yaml"}
+	args := []string{"--config-file=../test/config.yaml"}
 
 	err := provider.ReadConfig(args)
 	if err != nil {
@@ -93,7 +93,7 @@ func ExampleNewProvider_withConfigFile() {
 	port := provider.GetInt("port")
 	cfgFile := provider.GetString("config-file")
 
-	fmt.Printf("port=%d,cfgFile=%s", port, cfgFile)
+	fmt.Printf("port=%d was read from cfgFile=%s", port, cfgFile)
 	// Output:
-	// port=8080,cfgFile=cfg.yaml
+	// port=12345 was read from cfgFile=../test/config.yaml
 }
