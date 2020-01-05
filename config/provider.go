@@ -57,6 +57,7 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 	for _, opt := range options {
 		opt(&provider)
 	}
+
 	return provider
 }
 

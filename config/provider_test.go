@@ -24,7 +24,7 @@ func Test_NewProvider(t *testing.T) {
 	assert.NotNil(t, provider.Viper)
 	assert.Equal(t, envPrefix, provider.envPrefix)
 	assert.NoError(t, err)
-	assert.Empty(t, provider.AllKeys())
+	assert.Len(t, provider.AllKeys(), 1)
 	assert.Equal(t, "config-file", provider.configFileEntry.name)
 	assert.Empty(t, provider.configFileEntry.flagShortName)
 }
@@ -75,4 +75,25 @@ func ExampleNewProvider() {
 	fmt.Printf("port=%d, dbURL=%s, dbReconnect=%t", port, dbURL, dbReconnect)
 	// Output:
 	// port=8080, dbURL=http://localhost, dbReconnect=false
+}
+
+func ExampleNewProvider_withConfigFile() {
+	var configEntries []Entry
+
+	configEntries = append(configEntries, NewEntry("port", "the port to listen to", Default(8080), ShortName("p")))
+
+	provider := NewProvider(configEntries, "my-config", "MY_APP")
+	args := []string{"--config-file=cfg.yaml"}
+
+	err := provider.ReadConfig(args)
+	if err != nil {
+		panic(err)
+	}
+
+	port := provider.GetInt("port")
+	cfgFile := provider.GetString("config-file")
+
+	fmt.Printf("port=%d,cfgFile=%s", port, cfgFile)
+	// Output:
+	// port=8080,cfgFile=cfg.yaml
 }
