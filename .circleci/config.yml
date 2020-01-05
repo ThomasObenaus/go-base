@@ -7,7 +7,7 @@ jobs:
     steps:
       - checkout
       - run: make all
-      #- run: make cover-upload
+      - run: make cover-upload
 workflows:
   version: 2
   workflow:
