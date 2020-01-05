@@ -138,6 +138,8 @@ func registerEnv(vp *viper.Viper, envPrefix string, entry Entry) error {
 		return err
 	}
 
-	vp.SetEnvPrefix(envPrefix)
+	if len(envPrefix) > 0 {
+		vp.SetEnvPrefix(envPrefix)
+	}
 	return vp.BindEnv(entry.name)
 }

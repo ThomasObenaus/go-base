@@ -92,8 +92,9 @@ func Test_RegisterEnv_OK(t *testing.T) {
 	}
 	err := registerEnv(vp, envPrefix, cfgE)
 	assert.NoError(t, err)
-	os.Setenv(envPrefix+"_"+strings.ToUpper(cfgE.name), "test")
+	os.Setenv(envPrefix+"_"+strings.ToUpper(cfgE.name), "test1")
 	assert.NotEmpty(t, vp.Get(cfgE.name))
+	assert.Equal(t, "test1", vp.Get(cfgE.name))
 
 	cfgE = Entry{
 		name:    "flag",
@@ -101,8 +102,17 @@ func Test_RegisterEnv_OK(t *testing.T) {
 	}
 	err = registerEnv(vp, envPrefix, cfgE)
 	assert.NoError(t, err)
-	os.Setenv(strings.ToUpper(envPrefix+"_"+cfgE.name), "test")
+	os.Setenv(strings.ToUpper(envPrefix+"_"+cfgE.name), "test2")
 	assert.NotEmpty(t, vp.Get(cfgE.name))
+	assert.Equal(t, "test2", vp.Get(cfgE.name))
+
+	// without env prefix
+	vp = viper.New()
+	require.NotNil(t, vp)
+	err = registerEnv(vp, "", cfgE)
+	assert.NoError(t, err)
+	os.Setenv(strings.ToUpper(cfgE.name), "test3")
+	assert.Equal(t, "test3", vp.Get(cfgE.name))
 }
 
 func Test_RegisterEnv_Fail(t *testing.T) {
