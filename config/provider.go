@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -9,6 +11,8 @@ import (
 type Provider struct {
 	// config entries are all definitions of config entries that should be regarded
 	configEntries []Entry
+
+	configName string
 
 	// the environment prefix (will be added to all env vars) <envPrefix>_<name of config entry>
 	// e.g. assuming the envPrefix is "myApp" and the name of the config entry is "my-entry"
@@ -28,9 +32,14 @@ func NewProvider(configEntries []Entry, configName, envPrefix string) Provider {
 
 	provider := Provider{
 		configEntries: configEntries,
+		configName:    configName,
 		envPrefix:     envPrefix,
 		pFlagSet:      pflag.NewFlagSet(configName, pflag.ContinueOnError),
 		Viper:         viper.New(),
 	}
 	return provider
+}
+
+func (p Provider) String() string {
+	return fmt.Sprintf("%s: %v", p.configName, p.AllSettings())
 }
