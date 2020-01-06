@@ -44,9 +44,14 @@ func Test_CheckEvaluationResultToResponse(t *testing.T) {
 	assert.Equal(t, http.StatusServiceUnavailable, status)
 	assert.Equal(t, "unhealthy", response.Status)
 	assert.Len(t, response.Checks, 3)
-	assert.Equal(t, "No connection", response.Checks[0].Error)
-	assert.Equal(t, "Timeout", response.Checks[1].Error)
-	assert.Empty(t, response.Checks[2].Error)
+
+	checkByName := make(map[string]check)
+	checkByName[response.Checks[0].Name] = response.Checks[0]
+	checkByName[response.Checks[1].Name] = response.Checks[1]
+	checkByName[response.Checks[2].Name] = response.Checks[2]
+	assert.Equal(t, "No connection", checkByName["check1"].Error)
+	assert.Equal(t, "Timeout", checkByName["check2"].Error)
+	assert.Empty(t, checkByName["check3"].Error)
 }
 
 func Test_CheckEvaluationResultToResponseShouldBeUnhealthyIfTooOld(t *testing.T) {

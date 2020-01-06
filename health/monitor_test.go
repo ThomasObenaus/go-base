@@ -2,6 +2,7 @@ package health
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -74,4 +75,16 @@ func Test_EvaluateChecks(t *testing.T) {
 	assert.Nil(t, checkResult.checkHealthyness[nameCheck1])
 	assert.NotNil(t, checkResult.checkHealthyness[nameCheck2])
 	assert.Equal(t, errCheck2, checkResult.checkHealthyness[nameCheck2])
+}
+
+func ExampleNewMonitor() {
+	registry := NewRegistry()
+	monitor, _ := NewMonitor(&registry)
+	monitor.Start()
+
+	// register the endpoint at the router/ server of your choice
+	http.HandleFunc("/health", monitor.Health)
+	http.ListenAndServe(":8080", nil)
+
+	monitor.Stop()
 }

@@ -37,8 +37,18 @@ type checkEvaluationResult struct {
 
 // TODO: Add metric for health state
 
+// Option represents an option for the Monitor
+type Option func(m *Monitor)
+
+// WithLogger specifies the logger that should be used
+func WithLogger(logger zerolog.Logger) Option {
+	return func(m *Monitor) {
+		m.logger = logger
+	}
+}
+
 // NewMonitor creates a new health monitor
-func NewMonitor(registry *CheckRegistry) (*Monitor, error) {
+func NewMonitor(registry *CheckRegistry, options ...Option) (*Monitor, error) {
 
 	if registry == nil {
 		return nil, fmt.Errorf("The CheckRegistry must not be nil")
@@ -46,7 +56,7 @@ func NewMonitor(registry *CheckRegistry) (*Monitor, error) {
 
 	monitor := &Monitor{
 		registry:               registry,
-		checkInterval:          time.Second * 5,
+		checkInterval:          time.Second * 10,
 		checkEvaluationTimeout: time.Second * 30,
 	}
 
@@ -57,15 +67,22 @@ func NewMonitor(registry *CheckRegistry) (*Monitor, error) {
 	}
 	monitor.latestCheckResult.Store(checkResult)
 
+	// apply the options
+	for _, opt := range options {
+		opt(monitor)
+	}
+
 	return monitor, nil
 }
 
+// Start starts the monitoring
 func (m *Monitor) Start() {
 
 	go m.monitor(m.checkInterval)
 	m.logger.Info().Msg("Monitor started")
 }
 
+// Stop stops the monitoring
 func (m *Monitor) Stop() error {
 	m.logger.Info().Msg("Teardown requested")
 	close(m.stopChan)
