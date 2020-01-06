@@ -104,10 +104,12 @@ func Test_HealthEndpoint(t *testing.T) {
 	assert.WithinDuration(t, respHealth.At, time.Now(), time.Millisecond*10)
 	assert.Equal(t, "unhealthy", respHealth.Status)
 	assert.Len(t, respHealth.Checks, 2)
-	assert.Equal(t, "healthy", respHealth.Checks[0].Status)
-	assert.Equal(t, "check1", respHealth.Checks[0].Name)
-	assert.Empty(t, respHealth.Checks[0].Error)
-	assert.Equal(t, "unhealthy", respHealth.Checks[1].Status)
-	assert.Equal(t, "check2", respHealth.Checks[1].Name)
-	assert.Equal(t, "Timeout", respHealth.Checks[1].Error)
+
+	checkByName := make(map[string]check)
+	checkByName[respHealth.Checks[0].Name] = respHealth.Checks[0]
+	checkByName[respHealth.Checks[1].Name] = respHealth.Checks[1]
+	assert.Equal(t, "healthy", checkByName["check1"].Status)
+	assert.Empty(t, checkByName["check1"].Error)
+	assert.Equal(t, "unhealthy", checkByName["check2"].Status)
+	assert.Equal(t, "Timeout", checkByName["check2"].Error)
 }
