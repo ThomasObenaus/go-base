@@ -27,6 +27,9 @@ type Monitor struct {
 	stopChan chan struct{}
 
 	logger zerolog.Logger
+
+	// will be called each time the monitor evaluates the checks
+	onCheckCallback OnCheckFun
 }
 
 type checkEvaluationResult struct {
@@ -38,19 +41,6 @@ type checkEvaluationResult struct {
 	checkHealthyness map[string]error
 }
 
-// TODO: Add metric for health state
-// maybe via callback (e.g. onHealthStateChange)
-
-// Option represents an option for the Monitor
-type Option func(m *Monitor)
-
-// WithLogger specifies the logger that should be used
-func WithLogger(logger zerolog.Logger) Option {
-	return func(m *Monitor) {
-		m.logger = logger
-	}
-}
-
 // NewMonitor creates a new health monitor
 func NewMonitor(options ...Option) (*Monitor, error) {
 	monitor := &Monitor{
@@ -58,6 +48,7 @@ func NewMonitor(options ...Option) (*Monitor, error) {
 		checkInterval:          time.Second * 5,
 		checkEvaluationTimeout: time.Second * 30,
 		stopChan:               make(chan struct{}, 0),
+		onCheckCallback:        nil,
 	}
 
 	checkResult := checkEvaluationResult{
@@ -133,6 +124,14 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 			result.numErrors++
 		}
 		m.logger.Debug().Msgf("Check - '%s', err=%v", name, err)
+	}
+
+	if m.onCheckCallback != nil {
+		healthy := true
+		if result.numErrors > 0 {
+			healthy = false
+		}
+		m.onCheckCallback(healthy, result.numErrors)
 	}
 
 	return result
