@@ -15,11 +15,11 @@ type Handler struct {
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
-func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) Handler {
+func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) *Handler {
 	shutDownChan := make(chan os.Signal, 1)
 	signal.Notify(shutDownChan, syscall.SIGINT, syscall.SIGTERM)
 
-	handler := Handler{
+	handler := &Handler{
 		logger:            logger,
 		isShutdownPending: false,
 	}
@@ -32,7 +32,7 @@ func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) Handler 
 
 // shutdownHandler handler that shuts down the running components in case
 // a signal was sent on the given channel
-func (h Handler) shutdownHandler(shutdownChan <-chan os.Signal, orderedStopables []Stopable, logger zerolog.Logger) {
+func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, orderedStopables []Stopable, logger zerolog.Logger) {
 	s := <-shutdownChan
 	h.isShutdownPending = true
 	logger.Info().Msgf("Received %v. Shutting down...", s)
