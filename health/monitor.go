@@ -27,9 +27,12 @@ type Monitor struct {
 }
 
 type checkEvaluationResult struct {
-	at             time.Time
-	numErrors      uint
-	errorsPerCheck map[string]error
+	at        time.Time
+	numErrors uint
+	// a map that contains one entry per check
+	// if the check was healthy then the entry (error) is nil
+	// if the check was NOT healthy then the entry contains the according error
+	checkHealthyness map[string]error
 }
 
 // TODO: Add metric for health state
@@ -48,9 +51,9 @@ func NewMonitor(registry *CheckRegistry) (*Monitor, error) {
 	}
 
 	checkResult := checkEvaluationResult{
-		at:             time.Now(),
-		numErrors:      0,
-		errorsPerCheck: make(map[string]error),
+		at:               time.Now(),
+		numErrors:        0,
+		checkHealthyness: make(map[string]error),
 	}
 	monitor.latestCheckResult.Store(checkResult)
 
@@ -91,15 +94,15 @@ func (m *Monitor) monitor(checkInterval time.Duration) {
 func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 
 	result := checkEvaluationResult{
-		at:             at,
-		numErrors:      0,
-		errorsPerCheck: make(map[string]error),
+		at:               at,
+		numErrors:        0,
+		checkHealthyness: make(map[string]error),
 	}
 
 	for _, check := range m.registry.healthChecks {
 		err := check.IsHealthy()
+		result.checkHealthyness[check.Name()] = err
 		if err != nil {
-			result.errorsPerCheck[check.Name()] = err
 			result.numErrors++
 		}
 	}
