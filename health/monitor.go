@@ -89,6 +89,11 @@ func (m *Monitor) Stop() error {
 	return nil
 }
 
+// Join waits until the monitorhas been stopped
+func (m *Monitor) Join() {
+	m.wg.Wait()
+}
+
 func (m *Monitor) String() string {
 	return fmt.Sprintf("HealthMonitor (%d checks)", len(m.healthChecks))
 }

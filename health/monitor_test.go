@@ -106,6 +106,21 @@ func Test_ShouldNotRegister(t *testing.T) {
 	assert.Len(t, monitor.healthChecks, 0)
 }
 
+func TestRunJoinStop(t *testing.T) {
+
+	// GIVEN
+	monitor, err := NewMonitor()
+	require.NotNil(t, monitor)
+	require.NoError(t, err)
+
+	monitor.Start()
+	start := time.Now()
+	monitor.Stop()
+	monitor.Join()
+
+	assert.WithinDuration(t, start.Add(time.Millisecond*500), time.Now(), time.Second*1)
+}
+
 func ExampleNewMonitor() {
 	monitor, _ := NewMonitor()
 	check, _ := NewSimpleCheck("my-check", func() error {
