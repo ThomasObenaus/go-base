@@ -35,9 +35,9 @@ func Test_ShutdownHandler(t *testing.T) {
 	shutDownChan := make(chan os.Signal, 1)
 
 	// WHEN
-	stopable1.EXPECT().Name().Return("stopable1")
+	stopable1.EXPECT().String().Return("stopable1")
 	stopable1.EXPECT().Stop().Return(fmt.Errorf("ERROR"))
-	stopable2.EXPECT().Name().Return("stopable2")
+	stopable2.EXPECT().String().Return("stopable2")
 	stopable2.EXPECT().Stop().Return(nil)
 	go h.shutdownHandler(shutDownChan, stopables, logger)
 	shutDownChan <- signalMock{}

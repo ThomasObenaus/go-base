@@ -44,7 +44,7 @@ func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, orderedStopable
 // stop calls Stop() on all Stopable in the list as they are ordered.
 func stop(orderedStopables []Stopable, logger zerolog.Logger) {
 	for _, stopable := range orderedStopables {
-		name := stopable.Name()
+		name := stopable.String()
 		logger.Debug().Msgf("Stopping %s ...", name)
 		err := stopable.Stop()
 		if err != nil {

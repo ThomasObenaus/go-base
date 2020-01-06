@@ -46,16 +46,16 @@ func (mr *MockStopableMockRecorder) Stop() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockStopable)(nil).Stop))
 }
 
-// Name mocks base method
-func (m *MockStopable) Name() string {
+// String mocks base method
+func (m *MockStopable) String() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Name")
+	ret := m.ctrl.Call(m, "String")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Name indicates an expected call of Name
-func (mr *MockStopableMockRecorder) Name() *gomock.Call {
+// String indicates an expected call of String
+func (mr *MockStopableMockRecorder) String() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockStopable)(nil).Name))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockStopable)(nil).String))
 }

@@ -89,6 +89,10 @@ func (m *Monitor) Stop() error {
 	return nil
 }
 
+func (m *Monitor) String() string {
+	return fmt.Sprintf("HealthMonitor (%d checks)", len(m.healthChecks))
+}
+
 func (m *Monitor) monitor(checkInterval time.Duration) {
 	m.wg.Add(1)
 	defer m.wg.Done()
