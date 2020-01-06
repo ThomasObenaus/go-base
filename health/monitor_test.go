@@ -106,6 +106,33 @@ func Test_ShouldNotRegister(t *testing.T) {
 	assert.Len(t, monitor.healthChecks, 0)
 }
 
+func Test_OnCheck(t *testing.T) {
+
+	// GIVEN
+	healthy := false
+	numErrors := uint(0)
+	monitor, err := NewMonitor(OnCheck(func(h bool, n uint) {
+		healthy = h
+		numErrors = n
+	}))
+	require.NotNil(t, monitor)
+	require.NoError(t, err)
+	check, err := NewSimpleCheck("my-check", func() error {
+		return fmt.Errorf("ERROR")
+	})
+	require.NoError(t, err)
+	err = monitor.Register(check)
+	require.NoError(t, err)
+
+	// WHEN
+	now := time.Now()
+	monitor.evaluateChecks(now)
+
+	// THEN
+	assert.False(t, healthy)
+	assert.Equal(t, uint(1), numErrors)
+}
+
 func TestRunJoinStop(t *testing.T) {
 
 	// GIVEN
