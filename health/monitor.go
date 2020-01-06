@@ -56,7 +56,7 @@ func NewMonitor(registry *CheckRegistry, options ...Option) (*Monitor, error) {
 
 	monitor := &Monitor{
 		registry:               registry,
-		checkInterval:          time.Second * 10,
+		checkInterval:          time.Second * 5,
 		checkEvaluationTimeout: time.Second * 30,
 		stopChan:               make(chan struct{}, 0),
 	}
