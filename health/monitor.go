@@ -2,6 +2,7 @@ package health
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -11,9 +12,11 @@ import (
 
 // Monitor represents a monitor for the health state of a service
 type Monitor struct {
-	registry *CheckRegistry
+	// the registered health checks
+	healthChecks []Check
 
 	checkInterval time.Duration
+
 	// in case the check evaluation has not been done within
 	// checkEvaluationTimeout the health status will change to unhealthy
 	checkEvaluationTimeout time.Duration
@@ -36,6 +39,7 @@ type checkEvaluationResult struct {
 }
 
 // TODO: Add metric for health state
+// maybe via callback (e.g. onHealthStateChange)
 
 // Option represents an option for the Monitor
 type Option func(m *Monitor)
@@ -48,14 +52,9 @@ func WithLogger(logger zerolog.Logger) Option {
 }
 
 // NewMonitor creates a new health monitor
-func NewMonitor(registry *CheckRegistry, options ...Option) (*Monitor, error) {
-
-	if registry == nil {
-		return nil, fmt.Errorf("The CheckRegistry must not be nil")
-	}
-
+func NewMonitor(options ...Option) (*Monitor, error) {
 	monitor := &Monitor{
-		registry:               registry,
+		healthChecks:           make([]Check, 0),
 		checkInterval:          time.Second * 5,
 		checkEvaluationTimeout: time.Second * 30,
 		stopChan:               make(chan struct{}, 0),
@@ -117,7 +116,7 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 		checkHealthyness: make(map[string]error),
 	}
 
-	for _, check := range m.registry.healthChecks {
+	for _, check := range m.healthChecks {
 		name := check.Name()
 		err := check.IsHealthy()
 		result.checkHealthyness[name] = err
@@ -128,4 +127,19 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 	}
 
 	return result
+}
+
+// Register can be used to register a Check
+func (m *Monitor) Register(check Check) error {
+
+	if check == nil {
+		return fmt.Errorf("Unable to register a check that is nil")
+	}
+
+	if len(strings.TrimSpace(check.Name())) == 0 {
+		return fmt.Errorf("Unable to register a check without a name")
+	}
+
+	m.healthChecks = append(m.healthChecks, check)
+	return nil
 }

@@ -75,9 +75,9 @@ func Test_CheckEvaluationResultToResponseShouldBeUnhealthyIfTooOld(t *testing.T)
 func Test_HealthEndpoint(t *testing.T) {
 
 	// GIVEN
-	registry := NewRegistry()
-	monitor, err := NewMonitor(&registry)
+	monitor, err := NewMonitor()
 	require.NoError(t, err)
+	require.NotNil(t, monitor)
 	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
 	w := httptest.NewRecorder()
 	healthyness := make(map[string]error)

@@ -15,54 +15,38 @@ import (
 func Test_NewMonitor(t *testing.T) {
 
 	// GIVEN
-	registry := NewRegistry()
 
 	// WHEN
-	monitor, err := NewMonitor(&registry)
+	monitor, err := NewMonitor()
 
 	// THEN
 	assert.NoError(t, err)
 	assert.NotNil(t, monitor)
-	assert.NotNil(t, monitor.registry)
-}
-
-func Test_NewMonitorShouldFail(t *testing.T) {
-
-	// GIVEN
-
-	// WHEN
-	monitor, err := NewMonitor(nil)
-
-	// THEN
-	assert.Error(t, err)
-	assert.Nil(t, monitor)
 }
 
 func Test_EvaluateChecks(t *testing.T) {
 
 	// GIVEN
-	registry := NewRegistry()
-
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	nameCheck1 := "check1-healthy"
 	check1 := mock_health.NewMockCheck(mockCtrl)
 	check1.EXPECT().Name().Return(nameCheck1).Times(2)
 	check1.EXPECT().IsHealthy().Return(nil)
-	err := registry.Register(check1)
-	require.NoError(t, err)
 
 	nameCheck2 := "check2-unhealthy"
 	errCheck2 := fmt.Errorf("could not connect")
 	check2 := mock_health.NewMockCheck(mockCtrl)
 	check2.EXPECT().Name().Return(nameCheck2).Times(2)
 	check2.EXPECT().IsHealthy().Return(errCheck2)
-	err = registry.Register(check2)
-	require.NoError(t, err)
 
-	monitor, err := NewMonitor(&registry)
+	monitor, err := NewMonitor()
 	require.NoError(t, err)
 	require.NotNil(t, monitor)
+	err = monitor.Register(check1)
+	require.NoError(t, err)
+	err = monitor.Register(check2)
+	require.NoError(t, err)
 
 	// WHEN
 	now := time.Now()
@@ -77,9 +61,60 @@ func Test_EvaluateChecks(t *testing.T) {
 	assert.Equal(t, errCheck2, checkResult.checkHealthyness[nameCheck2])
 }
 
+func Test_ShouldRegister(t *testing.T) {
+
+	// GIVEN
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	check1 := mock_health.NewMockCheck(mockCtrl)
+	monitor, err := NewMonitor()
+	require.NoError(t, err)
+	require.NotNil(t, monitor)
+
+	// WHEN
+	check1.EXPECT().Name().Return("check1")
+	err = monitor.Register(check1)
+
+	// THEN
+	assert.NoError(t, err)
+	assert.Len(t, monitor.healthChecks, 1)
+}
+
+func Test_ShouldNotRegister(t *testing.T) {
+
+	// GIVEN
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	check1 := mock_health.NewMockCheck(mockCtrl)
+	monitor, err := NewMonitor()
+	require.NoError(t, err)
+	require.NotNil(t, monitor)
+
+	// WHEN
+	check1.EXPECT().Name().Return("")
+	err = monitor.Register(check1)
+
+	// THEN
+	assert.Error(t, err)
+	assert.Len(t, monitor.healthChecks, 0)
+
+	// WHEN
+	err = monitor.Register(nil)
+
+	// THEN
+	assert.Error(t, err)
+	assert.Len(t, monitor.healthChecks, 0)
+}
+
 func ExampleNewMonitor() {
-	registry := NewRegistry()
-	monitor, _ := NewMonitor(&registry)
+	monitor, _ := NewMonitor()
+	check, _ := NewSimpleCheck("my-check", func() error {
+		// return nil if healthy
+		// return the error if unhealthy
+		return nil
+	})
+
+	monitor.Register(check)
 	monitor.Start()
 
 	// register the endpoint at the router/ server of your choice
