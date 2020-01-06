@@ -12,6 +12,6 @@ func (h Handler) IsHealthy() error {
 }
 
 // Name returns the name of this handler
-func (h Handler) Name() string {
-	return "ShutdownHandler"
+func (h Handler) String() string {
+	return fmt.Sprintf("ShutdownHandler (shutdown in progress=%t)", h.isShutdownPending)
 }
