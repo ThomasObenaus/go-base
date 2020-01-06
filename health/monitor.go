@@ -118,11 +118,13 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 	}
 
 	for _, check := range m.registry.healthChecks {
+		name := check.Name()
 		err := check.IsHealthy()
-		result.checkHealthyness[check.Name()] = err
+		result.checkHealthyness[name] = err
 		if err != nil {
 			result.numErrors++
 		}
+		m.logger.Debug().Msgf("Check %s, err=%v", name, err)
 	}
 
 	return result
