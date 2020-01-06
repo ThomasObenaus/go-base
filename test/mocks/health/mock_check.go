@@ -46,16 +46,16 @@ func (mr *MockCheckMockRecorder) IsHealthy() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealthy", reflect.TypeOf((*MockCheck)(nil).IsHealthy))
 }
 
-// Name mocks base method
-func (m *MockCheck) Name() string {
+// String mocks base method
+func (m *MockCheck) String() string {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Name")
+	ret := m.ctrl.Call(m, "String")
 	ret0, _ := ret[0].(string)
 	return ret0
 }
 
-// Name indicates an expected call of Name
-func (mr *MockCheckMockRecorder) Name() *gomock.Call {
+// String indicates an expected call of String
+func (mr *MockCheckMockRecorder) String() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockCheck)(nil).Name))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockCheck)(nil).String))
 }

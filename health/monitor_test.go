@@ -31,13 +31,13 @@ func Test_EvaluateChecks(t *testing.T) {
 	defer mockCtrl.Finish()
 	nameCheck1 := "check1-healthy"
 	check1 := mock_health.NewMockCheck(mockCtrl)
-	check1.EXPECT().Name().Return(nameCheck1).Times(2)
+	check1.EXPECT().String().Return(nameCheck1).Times(2)
 	check1.EXPECT().IsHealthy().Return(nil)
 
 	nameCheck2 := "check2-unhealthy"
 	errCheck2 := fmt.Errorf("could not connect")
 	check2 := mock_health.NewMockCheck(mockCtrl)
-	check2.EXPECT().Name().Return(nameCheck2).Times(2)
+	check2.EXPECT().String().Return(nameCheck2).Times(2)
 	check2.EXPECT().IsHealthy().Return(errCheck2)
 
 	monitor, err := NewMonitor()
@@ -72,7 +72,7 @@ func Test_ShouldRegister(t *testing.T) {
 	require.NotNil(t, monitor)
 
 	// WHEN
-	check1.EXPECT().Name().Return("check1")
+	check1.EXPECT().String().Return("check1")
 	err = monitor.Register(check1)
 
 	// THEN
@@ -91,7 +91,7 @@ func Test_ShouldNotRegister(t *testing.T) {
 	require.NotNil(t, monitor)
 
 	// WHEN
-	check1.EXPECT().Name().Return("")
+	check1.EXPECT().String().Return("")
 	err = monitor.Register(check1)
 
 	// THEN

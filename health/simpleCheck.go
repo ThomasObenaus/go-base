@@ -39,6 +39,6 @@ func (s simpleCheck) IsHealthy() error {
 	return s.check()
 }
 
-func (s simpleCheck) Name() string {
+func (s simpleCheck) String() string {
 	return s.name
 }

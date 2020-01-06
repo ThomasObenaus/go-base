@@ -8,6 +8,6 @@ type Check interface {
 	// In case the check is not healthy the according error should be returned
 	IsHealthy() error
 
-	// Name shall return the name of the check
-	Name() string
+	// String ... to meet the Stringer interface
+	String() string
 }

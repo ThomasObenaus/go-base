@@ -23,7 +23,7 @@ func Test_NewSimpleCheck(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, check)
 	assert.Equal(t, err1, check.IsHealthy())
-	assert.Equal(t, checkName, check.Name())
+	assert.Equal(t, checkName, check.String())
 }
 
 func Test_NewSimpleCheckShouldFail(t *testing.T) {

@@ -126,7 +126,7 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 	}
 
 	for _, check := range m.healthChecks {
-		name := check.Name()
+		name := check.String()
 		err := check.IsHealthy()
 		result.checkHealthyness[name] = err
 		if err != nil {
@@ -145,7 +145,7 @@ func (m *Monitor) Register(check Check) error {
 		return fmt.Errorf("Unable to register a check that is nil")
 	}
 
-	if len(strings.TrimSpace(check.Name())) == 0 {
+	if len(strings.TrimSpace(check.String())) == 0 {
 		return fmt.Errorf("Unable to register a check without a name")
 	}
 
