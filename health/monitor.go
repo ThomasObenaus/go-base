@@ -138,16 +138,17 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 }
 
 // Register can be used to register a Check
-func (m *Monitor) Register(check Check) error {
+func (m *Monitor) Register(checks ...Check) error {
 
-	if check == nil {
-		return fmt.Errorf("Unable to register a check that is nil")
+	for _, check := range checks {
+		if check == nil {
+			return fmt.Errorf("Unable to register a check that is nil")
+		}
+		if len(strings.TrimSpace(check.String())) == 0 {
+			return fmt.Errorf("Unable to register a check without a name")
+		}
 	}
 
-	if len(strings.TrimSpace(check.String())) == 0 {
-		return fmt.Errorf("Unable to register a check without a name")
-	}
-
-	m.healthChecks = append(m.healthChecks, check)
+	m.healthChecks = append(m.healthChecks, checks...)
 	return nil
 }
