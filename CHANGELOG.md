@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.0.3 (2020-01-14)
+
+- With [#7](https://github.com/ThomasObenaus/go-base/pull/7) it is possible to register multiple health checks at once.
+
 ## v0.0.2 (2020-01-07)
 
 - Moved from BSD to MIT license
