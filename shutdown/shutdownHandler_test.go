@@ -9,6 +9,7 @@ import (
 	mock_shutdown "github.com/ThomasObenaus/go-base/test/mocks/shutdown"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 )
 
 type signalMock struct {
@@ -40,8 +41,15 @@ func Test_ShutdownHandler(t *testing.T) {
 	stopable2.EXPECT().String().Return("stopable2")
 	stopable2.EXPECT().Stop().Return(nil)
 	go h.shutdownHandler(shutDownChan, stopables, logger)
-	shutDownChan <- signalMock{}
-	time.Sleep(time.Second * 1)
+
+	start := time.Now()
+	go func() {
+		time.Sleep(time.Second * 1)
+		shutDownChan <- signalMock{}
+	}()
+
+	h.WaitUntilSignal()
 
 	// THEN
+	assert.WithinDuration(t, start, time.Now(), time.Millisecond*1200)
 }
