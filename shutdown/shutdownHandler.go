@@ -15,6 +15,7 @@ type Handler struct {
 	logger            zerolog.Logger
 	isShutdownPending bool
 	wg                sync.WaitGroup
+	orderedStopables  []Stopable
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
@@ -25,16 +26,37 @@ func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) *Handler
 	handler := &Handler{
 		logger:            logger,
 		isShutdownPending: false,
+		orderedStopables:  make([]Stopable, 0),
+	}
+	handler.orderedStopables = append(handler.orderedStopables, orderedStopables...)
+
+	go handler.shutdownHandler(shutDownChan, logger)
+	handler.logger.Info().Msgf("Shutdown Handler installed")
+	return handler
+}
+
+// Register a Stopable for shutdown handling. Per default the Stopable
+// is added to the front of the list of Stopable's this means the
+// Stopable that was the last one registered will be the first being called for shutdown.
+// If you call Register(stopable,false) you can add this Stopable to the end
+// of the list of registered Stopables.
+func (h *Handler) Register(stopable Stopable, front ...bool) {
+	pushFront := true
+
+	if len(front) > 0 {
+		pushFront = front[0]
 	}
 
-	go handler.shutdownHandler(shutDownChan, orderedStopables, logger)
-	handler.logger.Info().Msgf("Shutdown Handler installed for %d Stopables", len(orderedStopables))
-	return handler
+	if pushFront {
+		h.orderedStopables = append([]Stopable{stopable}, h.orderedStopables...)
+	} else {
+		h.orderedStopables = append(h.orderedStopables, stopable)
+	}
 }
 
 // shutdownHandler handler that shuts down the running components in case
 // a signal was sent on the given channel
-func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, orderedStopables []Stopable, logger zerolog.Logger) {
+func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, logger zerolog.Logger) {
 	h.wg.Add(1)
 	defer h.wg.Done()
 
@@ -43,7 +65,7 @@ func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, orderedStopable
 	logger.Info().Msgf("Received %v. Shutting down...", s)
 
 	// Stop all components
-	stop(orderedStopables, logger)
+	stop(h.orderedStopables, logger)
 }
 
 // WaitUntilSignal waits/ blocks until either syscall.SIGINT or syscall.SIGTERM was issued to the process
@@ -59,7 +81,7 @@ func stop(orderedStopables []Stopable, logger zerolog.Logger) {
 		logger.Debug().Msgf("Stopping %s ...", name)
 		err := stopable.Stop()
 		if err != nil {
-			logger.Error().Err(err).Msg("Failed stopping '%s'")
+			logger.Error().Err(err).Msgf("Failed stopping '%s'", name)
 			continue
 		}
 		logger.Info().Msgf("%s stopped.", name)

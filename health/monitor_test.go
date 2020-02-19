@@ -22,6 +22,7 @@ func Test_NewMonitor(t *testing.T) {
 	// THEN
 	assert.NoError(t, err)
 	assert.NotNil(t, monitor)
+	assert.NotEmpty(t, monitor.String())
 }
 
 func Test_EvaluateChecks(t *testing.T) {
