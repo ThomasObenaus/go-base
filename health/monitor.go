@@ -47,7 +47,7 @@ func NewMonitor(options ...Option) (*Monitor, error) {
 		healthChecks:           make([]Check, 0),
 		checkInterval:          time.Second * 5,
 		checkEvaluationTimeout: time.Second * 30,
-		stopChan:               make(chan struct{}, 0),
+		stopChan:               make(chan struct{}),
 		onCheckCallback:        nil,
 	}
 
