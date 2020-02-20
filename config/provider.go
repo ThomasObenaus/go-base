@@ -43,7 +43,7 @@ func CfgFile(parameterName, shortParameterName string) ProviderOption {
 // on the given entries
 func NewProvider(configEntries []Entry, configName, envPrefix string, options ...ProviderOption) Provider {
 
-	defaultConfigFileEntry := NewEntry("config-file", "Specifies the full path and name of the configuration file", Bind(true, false))
+	defaultConfigFileEntry := NewEntry("config-file", "Specifies the full path and name of the configuration file", Bind(true, true))
 	provider := Provider{
 		configEntries:   configEntries,
 		configName:      configName,

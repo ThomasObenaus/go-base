@@ -21,13 +21,13 @@ func (p *Provider) ReadConfig(args []string) error {
 		return err
 	}
 
-	configFilenameEntryname := p.configFileEntry.name
-	cfgFile := p.Viper.GetString(configFilenameEntryname)
-	if err := p.readCfgFile(cfgFile); err != nil {
+	if err := p.registerEnvParams(); err != nil {
 		return err
 	}
 
-	if err := p.registerEnvParams(); err != nil {
+	configFilenameEntryname := p.configFileEntry.name
+	cfgFile := p.Viper.GetString(configFilenameEntryname)
+	if err := p.readCfgFile(cfgFile); err != nil {
 		return err
 	}
 
