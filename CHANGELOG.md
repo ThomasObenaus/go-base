@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.0.6 (2020-02-20)
+
+- With [#15](https://github.com/ThomasObenaus/go-base/pull/15) it is possible to specify the config-file to use via env var.
+
 ## v0.0.5 (2020-02-19)
 
 - With [#9](https://github.com/ThomasObenaus/go-base/issues/9) it is now possible to register a shutdown.Stopable even after the shutdown handler was already set uo.
