@@ -30,6 +30,7 @@ func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) *Handler
 	}
 	handler.orderedStopables = append(handler.orderedStopables, orderedStopables...)
 
+	handler.wg.Add(1)
 	go handler.shutdownHandler(shutDownChan, logger)
 	handler.logger.Info().Msgf("Shutdown Handler installed")
 	return handler
@@ -57,7 +58,6 @@ func (h *Handler) Register(stopable Stopable, front ...bool) {
 // shutdownHandler handler that shuts down the running components in case
 // a signal was sent on the given channel
 func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, logger zerolog.Logger) {
-	h.wg.Add(1)
 	defer h.wg.Done()
 
 	s := <-shutdownChan
