@@ -30,6 +30,8 @@ type Monitor struct {
 
 	// will be called each time the monitor evaluates the checks
 	onCheckCallback OnCheckFun
+
+	mux sync.RWMutex
 }
 
 type checkEvaluationResult struct {
@@ -109,6 +111,9 @@ func (m *Monitor) monitor(checkInterval time.Duration) {
 }
 
 func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
+	// guard m.healthChecks
+	m.mux.Lock()
+	defer m.mux.Unlock()
 
 	result := checkEvaluationResult{
 		at:               at,
@@ -149,6 +154,8 @@ func (m *Monitor) Register(checks ...Check) error {
 		}
 	}
 
+	m.mux.Lock()
+	defer m.mux.Unlock()
 	m.healthChecks = append(m.healthChecks, checks...)
 	return nil
 }
