@@ -2,6 +2,7 @@
 
 ## v0.0.6 (2020-02-20)
 
+- With [#14](https://github.com/ThomasObenaus/go-base/pull/14) a race condition in health and shutdown package was fixed.
 - With [#15](https://github.com/ThomasObenaus/go-base/pull/15) it is possible to specify the config-file to use via env var.
 
 ## v0.0.5 (2020-02-19)
