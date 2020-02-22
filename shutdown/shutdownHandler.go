@@ -8,14 +8,16 @@ import (
 	"time"
 
 	"github.com/rs/zerolog"
+	"go.uber.org/atomic"
 )
 
 // Handler represents a handler for shutdown events
 type Handler struct {
 	logger            zerolog.Logger
-	isShutdownPending bool
-	wg                sync.WaitGroup
-	orderedStopables  []Stopable
+	isShutdownPending *atomic.Bool
+
+	wg               sync.WaitGroup
+	orderedStopables []Stopable
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
@@ -25,7 +27,7 @@ func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) *Handler
 
 	handler := &Handler{
 		logger:            logger,
-		isShutdownPending: false,
+		isShutdownPending: atomic.NewBool(false),
 		orderedStopables:  make([]Stopable, 0),
 	}
 	handler.orderedStopables = append(handler.orderedStopables, orderedStopables...)
@@ -61,7 +63,7 @@ func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, logger zerolog.
 	defer h.wg.Done()
 
 	s := <-shutdownChan
-	h.isShutdownPending = true
+	h.isShutdownPending.Store(true)
 	logger.Info().Msgf("Received %v. Shutting down...", s)
 
 	// Stop all components
