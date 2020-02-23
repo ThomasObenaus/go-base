@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/atomic"
 )
 
 type signalMock struct {
@@ -33,7 +34,8 @@ func Test_ShutdownHandler(t *testing.T) {
 	stopables = append(stopables, stopable2)
 	var logger zerolog.Logger
 	h := Handler{
-		orderedStopables: stopables,
+		orderedStopables:  stopables,
+		isShutdownPending: atomic.NewBool(false),
 	}
 	shutDownChan := make(chan os.Signal, 1)
 
@@ -67,7 +69,8 @@ func Test_RegisterFront(t *testing.T) {
 	stopable2 := mock_shutdown.NewMockStopable(mockCtrl)
 	var logger zerolog.Logger
 	h := Handler{
-		orderedStopables: make([]Stopable, 0),
+		orderedStopables:  make([]Stopable, 0),
+		isShutdownPending: atomic.NewBool(false),
 	}
 	shutDownChan := make(chan os.Signal, 1)
 
@@ -106,7 +109,8 @@ func Test_RegisterBack(t *testing.T) {
 	stopable2 := mock_shutdown.NewMockStopable(mockCtrl)
 	var logger zerolog.Logger
 	h := Handler{
-		orderedStopables: make([]Stopable, 0),
+		orderedStopables:  make([]Stopable, 0),
+		isShutdownPending: atomic.NewBool(false),
 	}
 	shutDownChan := make(chan os.Signal, 1)
 

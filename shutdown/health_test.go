@@ -27,7 +27,7 @@ func Test_IsHealthyFalse(t *testing.T) {
 	h := InstallHandler(nil, logger)
 
 	// WHEN
-	h.isShutdownPending = true
+	h.isShutdownPending.Store(true)
 	err := h.IsHealthy()
 
 	// THEN
