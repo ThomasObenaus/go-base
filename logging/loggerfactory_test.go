@@ -36,6 +36,23 @@ func TestNewNamedLogger(t *testing.T) {
 	loggerDup = logger.Output(&strout)
 	loggerDup.Info().Msg("HWLD")
 	assert.Contains(t, strout.String(), "MyTestLogger2")
+	assert.Equal(t, zerolog.DebugLevel, logger.GetLevel())
+}
+
+func TestLoglevel(t *testing.T) {
+
+	loggerFactory := New(true, false, false, Level(zerolog.ErrorLevel))
+
+	logger := loggerFactory.NewNamedLogger("MyTestLogger")
+	strout := strings.Builder{}
+	loggerDup := logger.Output(&strout)
+	loggerDup.Info().Msg("INFO-MESSAGE")
+	loggerDup.Error().Msg("ERROR-MESSAGE")
+	assert.NotContains(t, strout.String(), "INFO-MESSAGE")
+	assert.Contains(t, strout.String(), "ERROR-MESSAGE")
+	assert.Equal(t, zerolog.ErrorLevel, logger.GetLevel())
+	strout.Reset()
+
 }
 
 func ExampleNew() {

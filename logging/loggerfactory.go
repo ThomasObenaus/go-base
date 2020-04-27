@@ -12,8 +12,28 @@ type LoggerFactory interface {
 	NewNamedLogger(name string) zerolog.Logger
 }
 
+// Option is the struct for defining optional parameters for LoggerFactory
+type Option func(*loggerFactoryImpl)
+
+// Level sets the log-level used for the loggers created through this factory
+func Level(level zerolog.Level) Option {
+	return func(lf *loggerFactoryImpl) {
+		lf.logLevel = level
+	}
+}
+
 // New creates a new LoggerFactory which then can be used to create configured named loggers (log channels)
-func New(structuredLogging, unixTimeStamp, disableColoredLogs bool) LoggerFactory {
+func New(structuredLogging, unixTimeStamp, disableColoredLogs bool, options ...Option) LoggerFactory {
+
+	factory := &loggerFactoryImpl{
+		structuredLogging:  structuredLogging,
+		disableColoredLogs: disableColoredLogs,
+		logLevel:           zerolog.DebugLevel,
+	}
+
+	for _, opt := range options {
+		opt(factory)
+	}
 
 	// default format for the timestamp
 	zerolog.TimeFieldFormat = time.StampMilli //time.RFC3339
@@ -25,23 +45,24 @@ func New(structuredLogging, unixTimeStamp, disableColoredLogs bool) LoggerFactor
 		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	}
 
-	return &loggerFactoryImpl{structuredLogging: structuredLogging, disableColoredLogs: disableColoredLogs}
+	return factory
 }
 
 type loggerFactoryImpl struct {
 	structuredLogging  bool
 	disableColoredLogs bool
+	logLevel           zerolog.Level
 }
 
 // NewNamedLogger creates a new named and configured log-channel (logger)
 func (lf *loggerFactoryImpl) NewNamedLogger(name string) zerolog.Logger {
 
 	if lf.structuredLogging {
-		return zerolog.New(os.Stdout).With().Timestamp().Str("logger", name).Logger()
+		return zerolog.New(os.Stdout).Level(lf.logLevel).With().Timestamp().Str("logger", name).Logger()
 	}
 
 	return zerolog.New(os.Stdout).Output(zerolog.ConsoleWriter{
 		NoColor: lf.disableColoredLogs, Out: os.Stderr,
 		TimeFormat: zerolog.TimeFieldFormat,
-	}).With().Timestamp().Str("logger", name).Logger()
+	}).Level(lf.logLevel).With().Timestamp().Str("logger", name).Logger()
 }

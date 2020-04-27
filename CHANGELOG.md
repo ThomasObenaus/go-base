@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.0.7 (2020-02-22)
+## v0.0.7 (2020-04-27)
 
+- With [#18](https://github.com/ThomasObenaus/go-base/issues/18) the loglevel can be adjusted.
 - With [#16](https://github.com/ThomasObenaus/go-base/issues/16) a race condition in shutdown package was fixed.
 
 ## v0.0.6 (2020-02-20)
