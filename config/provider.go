@@ -58,6 +58,12 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 		opt(&provider)
 	}
 
+	// Enable casting to type based on given default values
+	// this ensures that viper.Get() returns the casted instance instead of the plain value.
+	// That helps for example when a configuration is of type time.Duration.
+	// Usually viper.Get() would return a string but now it returns a time.Duration
+	provider.Viper.SetTypeByDefaultValue(true)
+
 	return provider
 }
 

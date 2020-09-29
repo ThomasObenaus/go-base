@@ -15,17 +15,20 @@ import (
 // TODO: SubStructs
 
 type Cfg struct {
-	Setting5 time.Duration `cfg:"name:bla.setting5;;desc:This is;;default:23h"`
-	Port     int
-	DryRun   bool
-	Setting1 bool   `cfg:"name:bla.setting1;;desc:This is;;default:true"`
-	Setting2 string `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
-	Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
-	Setting4 int    `cfg:"name:bla.setting4;;desc:This is;;default:989"`
+	Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
+	Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
+	Setting3 string        `cfg:"name:name;;desc:A string;;default:Hans"`
+	Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
+	Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
+	Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
+	//Setting7 *CfgSub       `cfg:"name:bla.setting-4;;desc:desc"`
+	Port   int
+	DryRun bool
+	//Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
+	//Setting4 int    `cfg:"name:bla.setting4;;desc:This is;;default:989"`
 	//Setting1  string `cfg:"name:bla.setting-one111;;desc:This is;;default:bla_default"`
 	//Setting2  string `cfg:"name:bla.setting-two;;desc:desc"`
 	//Setting3  CfgSub `cfg:"name:bla.setting-three;;desc:desc"`
-	//	Setting4  *CfgSub `cfg:"name:bla.setting-4;;desc:desc"`
 }
 
 type CfgSub struct {
@@ -35,7 +38,7 @@ type CfgSub struct {
 
 func main() {
 
-	args := []string{"--port=1234", "--dry-run", "--bla.setting1", "--bla.setting2=hello"}
+	args := []string{"--port=1234", "--dry-run", "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
@@ -47,14 +50,12 @@ func main() {
 func unmarshal(provider config.Provider, target interface{}) error {
 
 	apply(provider, target)
-	//json.Unmarshal()
 	return nil
 }
 
 func apply(provider config.Provider, target interface{}) {
 	tCfg := reflect.TypeOf(target)
 	vCfg := reflect.ValueOf(target)
-	fmt.Printf("### %v\n", target)
 
 	// TODO move this outside to the unmarshal func
 	if vCfg.Kind() != reflect.Ptr || vCfg.IsNil() {
@@ -94,13 +95,11 @@ func apply(provider config.Provider, target interface{}) {
 			continue
 		}
 
+		// apply the value
 		if provider.IsSet(eDef.name) {
 			val := provider.Get(eDef.name)
-			fmt.Printf("try %v (%s)\n", val, eDef.name)
-			v.Set(reflect.ValueOf(provider.Get(eDef.name)))
+			v.Set(reflect.ValueOf(val))
 		}
-
-		fmt.Printf("aPPLIED %v \n", eDef)
 	}
 }
 
@@ -153,16 +152,20 @@ type entryDefinition struct {
 }
 
 func setValueFromString(v reflect.Value, strVal string) error {
-	fmt.Printf("ääää '%v'\n", v.Type())
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 
-		sdflsdfk := time.Duration(0)
-		if v.Type() == reflect.TypeOf(&sdflsdfk) {
-			time.ParseDuration()
-
+		// handle duration
+		if v.Type() == reflect.TypeOf(time.Duration(0)) {
+			dur, err := time.ParseDuration(strVal)
+			if err != nil {
+				return err
+			}
+			v.SetInt(dur.Nanoseconds())
+			return nil
 		}
 
+		// handle the usual int
 		val, err := strconv.ParseInt(strVal, 0, 64)
 		if err != nil {
 			return err
@@ -304,6 +307,6 @@ func (cfg *Cfg) fillCfgValues(provider config.Provider) error {
 	cfg.DryRun = provider.GetBool(dryRun.Name())
 	cfg.Port = provider.GetInt(port.Name())
 
-	cfg.Setting2 = "OVERWRITTEN"
+	cfg.Setting3 = "Thomas (OVERWRITTEN)"
 	return nil
 }
