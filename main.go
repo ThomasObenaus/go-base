@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -9,19 +8,20 @@ import (
 	"time"
 
 	"github.com/ThomasObenaus/go-base/config"
+	"github.com/pkg/errors"
 )
 
 // TODO: Fail in case there are duplicate settings configured
 // TODO: SubStructs
 
 type Cfg struct {
-	Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
-	Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
-	Setting3 string        `cfg:"name:name;;desc:A string;;default:Hans"`
-	Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
-	Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
-	Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
-	//Setting7 *CfgSub       `cfg:"name:bla.setting-4;;desc:desc"`
+	//Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
+	//Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
+	//Setting3 string        `cfg:"name:name;;desc:A string;;default:Hans"`
+	//Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
+	//Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
+	//Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
+	LevelA LevelA `cfg:"name:a;;desc:desc"`
 	Port   int
 	DryRun bool
 	//Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
@@ -31,14 +31,19 @@ type Cfg struct {
 	//Setting3  CfgSub `cfg:"name:bla.setting-three;;desc:desc"`
 }
 
-type CfgSub struct {
-	Setting1 string `cfg:"name:bla.sub.setting-one;;desc:This is;;default:bla_default"`
-	Setting2 string `cfg:"name:bla.sub.setting-two;;desc:desc"`
+type LevelA struct {
+	LevelA1 LevelB `cfg:"name:a.b;;desc:This is;;default:bla_default"`
+	LevelA2 string `cfg:"name:a.c;;desc:desc"`
+}
+
+type LevelB struct {
+	LevelB1 string `cfg:"name:a.b.1;;desc:This is;;default:bla_default"`
+	LevelB2 string `cfg:"name:a.b.2;;desc:desc"`
 }
 
 func main() {
 
-	args := []string{"--port=1234", "--dry-run", "--duration=15m", "--really", "--name=Harry"}
+	args := []string{"--port=1234", "--dry-run"} //, "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
@@ -103,7 +108,18 @@ func apply(provider config.Provider, target interface{}) {
 	}
 }
 
-func extractConfigDefinition(tCfg reflect.Type, entries []config.Entry) []config.Entry {
+var verbose = true
+
+func debug(format string, a ...interface{}) {
+	if verbose {
+		fmt.Print("[DBG]")
+		fmt.Printf(format, a...)
+	}
+}
+
+func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.Entry, error) {
+
+	entries := make([]config.Entry, 0)
 
 	// use the element type if we have a pointer
 	if tCfg.Kind() == reflect.Ptr {
@@ -113,36 +129,43 @@ func extractConfigDefinition(tCfg reflect.Type, entries []config.Entry) []config
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
 		fType := field.Type
-		cfgSetting, ok := field.Tag.Lookup("cfg")
-		if !ok {
-			continue
-		}
+
+		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
+		debug("Extracting %s\n", printableName)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
 		if err != nil {
-			fmt.Printf("Error ignoring '%s' because %s\n", cfgSetting, err.Error())
-			continue
+			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
 		}
 
 		if !isPrimitive {
-			subEntries := extractConfigDefinition(fType, entries)
+			subEntries, err := extractConfigDefinition(fType, printableName)
+			if err != nil {
+				return nil, err
+			}
 			entries = append(entries, subEntries...)
+			continue
+		}
+
+		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
+		// skip all fields without the cfg tag
+		if !hasCfgTag {
 			continue
 		}
 
 		eDef, err := parseCfgEntry(cfgSetting, fType)
 		if err != nil {
-			fmt.Printf("Error ignoring '%s' because %s\n", cfgSetting, err.Error())
-			continue
+			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
 		}
 
+		// create and append the new config entry
 		entry := config.NewEntry(eDef.name, eDef.description, config.Default(eDef.def))
 		entries = append(entries, entry)
 
-		fmt.Printf("%v \n", eDef)
+		debug("Extracted %v \n", eDef)
 	}
-	return entries
+	return entries, nil
 }
 
 type entryDefinition struct {
@@ -284,10 +307,14 @@ var configEntries = []config.Entry{
 func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
-	configEntries = extractConfigDefinition(cfgType, configEntries)
+	newConfigEntries, err := extractConfigDefinition(cfgType, "")
+	if err != nil {
+		return Cfg{}, err
+	}
+	configEntries = append(configEntries, newConfigEntries...)
 
 	provider := config.NewProvider(configEntries, serviceAbbreviation, serviceAbbreviation)
-	err := provider.ReadConfig(args)
+	err = provider.ReadConfig(args)
 	if err != nil {
 		return Cfg{}, err
 	}
@@ -307,6 +334,6 @@ func (cfg *Cfg) fillCfgValues(provider config.Provider) error {
 	cfg.DryRun = provider.GetBool(dryRun.Name())
 	cfg.Port = provider.GetInt(port.Name())
 
-	cfg.Setting3 = "Thomas (OVERWRITTEN)"
+	//	cfg.Setting3 = "Thomas (OVERWRITTEN)"
 	return nil
 }
