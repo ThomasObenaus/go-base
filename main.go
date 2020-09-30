@@ -22,8 +22,8 @@ type Cfg struct {
 	//Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
 	//Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
 	LevelA LevelA `cfg:"name:a;;desc:desc"`
-	Port   int
-	DryRun bool
+	//Port   int
+	//DryRun bool
 	//Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
 	//Setting4 int    `cfg:"name:bla.setting4;;desc:This is;;default:989"`
 	//Setting1  string `cfg:"name:bla.setting-one111;;desc:This is;;default:bla_default"`
@@ -32,13 +32,13 @@ type Cfg struct {
 }
 
 type LevelA struct {
-	LevelA1 LevelB `cfg:"name:a.b;;desc:This is;;default:bla_default"`
-	LevelA2 string `cfg:"name:a.c;;desc:desc"`
+	LevelA1 LevelB `cfg:"name:a.b;;desc:This is;;default:ABCDE"`
+	LevelA2 string `cfg:"name:a.c;;desc:desc;;default:UIIII"`
 }
 
 type LevelB struct {
 	LevelB1 string `cfg:"name:a.b.1;;desc:This is;;default:bla_default"`
-	LevelB2 string `cfg:"name:a.b.2;;desc:desc"`
+	LevelB2 string `cfg:"name:a.b.2;;desc:desc;;default:HAJSJSJ"`
 }
 
 func main() {
@@ -53,59 +53,65 @@ func main() {
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
-
-	apply(provider, target)
-	return nil
+	//json.Unmarshal()
+	return apply(provider, target, "")
 }
 
-func apply(provider config.Provider, target interface{}) {
+func apply(provider config.Provider, target interface{}, nameOfParent string) error {
 	tCfg := reflect.TypeOf(target)
 	vCfg := reflect.ValueOf(target)
 
-	// TODO move this outside to the unmarshal func
-	if vCfg.Kind() != reflect.Ptr || vCfg.IsNil() {
-		panic("skfskfj")
+	isNilPtr := vCfg.Kind() == reflect.Ptr && vCfg.IsNil()
+	isNotSupportedField := vCfg.Kind() != reflect.Ptr && vCfg.Kind() != reflect.Struct
+	if isNotSupportedField || isNilPtr {
+		return fmt.Errorf("Can't handle %v (kind=%s,value=%v) (probably the type is not supported)", tCfg, tCfg.Kind(), vCfg)
 	}
 
+	debug("A: target=%v tCfg=%v vCfg=%v\n", target, tCfg, vCfg)
 	// use the element type if we have a pointer
 	if tCfg.Kind() == reflect.Ptr {
 		tCfg = tCfg.Elem()
 		vCfg = vCfg.Elem()
 	}
+	debug("B: target=%v tCfg=%v vCfg=%v\n", target, tCfg, vCfg)
 
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
 		fType := field.Type
 		v := vCfg.Field(i)
+		fieldValue := v.Addr().Interface()
 		cfgSetting, ok := field.Tag.Lookup("cfg")
 		if !ok {
 			continue
 		}
+		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
 		if err != nil {
-			fmt.Printf("Error ignoring '%s' because %s\n", cfgSetting, err.Error())
-			continue
+			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
 		}
 
 		if !isPrimitive {
-			apply(provider, v)
+			if err := apply(provider, fieldValue, printableName); err != nil {
+				return err
+			}
 			continue
 		}
 
 		eDef, err := parseCfgEntry(cfgSetting, fType)
 		if err != nil {
-			fmt.Printf("Error ignoring '%s' because %s\n", cfgSetting, err.Error())
-			continue
+			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
 		}
 
 		// apply the value
 		if provider.IsSet(eDef.name) {
+			debug("Applying value for %s\n", eDef.name)
 			val := provider.Get(eDef.name)
 			v.Set(reflect.ValueOf(val))
 		}
 	}
+	return nil
 }
 
 var verbose = true
@@ -331,9 +337,9 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 }
 
 func (cfg *Cfg) fillCfgValues(provider config.Provider) error {
-	cfg.DryRun = provider.GetBool(dryRun.Name())
-	cfg.Port = provider.GetInt(port.Name())
-
+	//cfg.DryRun = provider.GetBool(dryRun.Name())
+	//cfg.Port = provider.GetInt(port.Name())
+	//
 	//	cfg.Setting3 = "Thomas (OVERWRITTEN)"
 	return nil
 }
