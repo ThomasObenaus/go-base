@@ -12,16 +12,17 @@ import (
 )
 
 // TODO: Fail in case there are duplicate settings configured
-// TODO: SubStructs
+// TODO: Custom function hooks for complex parsing
+// TODO: slices
 
 type Cfg struct {
-	//Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
-	//Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
-	//Setting3 string        `cfg:"name:name;;desc:A string;;default:Hans"`
-	//Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
-	//Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
-	//Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
-	LevelA LevelA `cfg:"name:a;;desc:desc"`
+	Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
+	Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
+	Setting3 string        `cfg:"name:name;;desc:A string;;default:Hans"`
+	Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
+	Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
+	Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
+	LevelA   LevelA        `cfg:"name:a;;desc:desc"`
 	//Port   int
 	//DryRun bool
 	//Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
@@ -32,18 +33,18 @@ type Cfg struct {
 }
 
 type LevelA struct {
-	LevelA1 LevelB `cfg:"name:a.b;;desc:This is;;default:ABCDE"`
+	LevelA1 LevelB //`cfg:"name:a.b;;desc:This is;;default:ABCDE"`
 	LevelA2 string `cfg:"name:a.c;;desc:desc;;default:UIIII"`
 }
 
 type LevelB struct {
-	LevelB1 string `cfg:"name:a.b.1;;desc:This is;;default:bla_default"`
-	LevelB2 string `cfg:"name:a.b.2;;desc:desc;;default:HAJSJSJ"`
+	LevelB1 string        `cfg:"name:a.b.1;;desc:This is;;default:HANS"`
+	LevelB2 time.Duration `cfg:"name:a.b.duration;;desc:desc;;default:26m"`
 }
 
 func main() {
 
-	args := []string{"--port=1234", "--dry-run"} //, "--duration=15m", "--really", "--name=Harry"}
+	args := []string{"--port=1234", "--dry-run", "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
@@ -53,7 +54,6 @@ func main() {
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
-	//json.Unmarshal()
 	return apply(provider, target, "")
 }
 
@@ -62,29 +62,23 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 	vCfg := reflect.ValueOf(target)
 
 	isNilPtr := vCfg.Kind() == reflect.Ptr && vCfg.IsNil()
-	isNotSupportedField := vCfg.Kind() != reflect.Ptr && vCfg.Kind() != reflect.Struct
+	isNotSupportedField := vCfg.Kind() != reflect.Ptr
 	if isNotSupportedField || isNilPtr {
 		return fmt.Errorf("Can't handle %v (kind=%s,value=%v) (probably the type is not supported)", tCfg, tCfg.Kind(), vCfg)
 	}
 
-	debug("A: target=%v tCfg=%v vCfg=%v\n", target, tCfg, vCfg)
-	// use the element type if we have a pointer
-	if tCfg.Kind() == reflect.Ptr {
-		tCfg = tCfg.Elem()
-		vCfg = vCfg.Elem()
-	}
-	debug("B: target=%v tCfg=%v vCfg=%v\n", target, tCfg, vCfg)
+	// use the element type since we have a pointer
+	tCfg = tCfg.Elem()
+	vCfg = vCfg.Elem()
 
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
 		fType := field.Type
 		v := vCfg.Field(i)
 		fieldValue := v.Addr().Interface()
-		cfgSetting, ok := field.Tag.Lookup("cfg")
-		if !ok {
-			continue
-		}
 		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
+
+		debug("Applying %s\n", printableName)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
@@ -92,10 +86,17 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
 		}
 
+		// handling of non primitives (stucts)
 		if !isPrimitive {
 			if err := apply(provider, fieldValue, printableName); err != nil {
 				return err
 			}
+			continue
+		}
+
+		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
+		// ignore fields without a config tag
+		if !hasCfgTag {
 			continue
 		}
 
@@ -106,9 +107,9 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 
 		// apply the value
 		if provider.IsSet(eDef.name) {
-			debug("Applying value for %s\n", eDef.name)
 			val := provider.Get(eDef.name)
 			v.Set(reflect.ValueOf(val))
+			debug("Applied '%v' to %s based on config '%s'\n", val, printableName, eDef.name)
 		}
 	}
 	return nil
