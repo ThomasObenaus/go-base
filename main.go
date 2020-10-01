@@ -16,13 +16,13 @@ import (
 // TODO: slices
 
 type Cfg struct {
-	Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
-	Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
-	Setting3 string        `cfg:"name:name;;desc:A string;;default:Hans"`
-	Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
-	Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
-	Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
-	LevelA   LevelA        `cfg:"name:a;;desc:desc"`
+	//Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
+	//Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
+	Setting3 []string `cfg:"name:name;;desc:A string;;default:Hans"`
+	//Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
+	//Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
+	//Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
+	//LevelA   LevelA        `cfg:"name:a;;desc:desc"`
 	//Port   int
 	//DryRun bool
 	//Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
@@ -33,8 +33,8 @@ type Cfg struct {
 }
 
 type LevelA struct {
-	LevelA1 LevelB //`cfg:"name:a.b;;desc:This is;;default:ABCDE"`
-	LevelA2 string `cfg:"name:a.c;;desc:desc;;default:UIIII"`
+	LevelA1 LevelB   //`cfg:"name:a.b;;desc:This is;;default:ABCDE"`
+	LevelA2 []string `cfg:"name:a.c;;desc:desc;;default:1,2,3,4"`
 }
 
 type LevelB struct {
@@ -44,7 +44,7 @@ type LevelB struct {
 
 func main() {
 
-	args := []string{"--port=1234", "--dry-run", "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
+	args := []string{"--port=1234", "--dry-run", "--name=heheh,kk"} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
@@ -108,8 +108,9 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 		// apply the value
 		if provider.IsSet(eDef.name) {
 			val := provider.Get(eDef.name)
-			v.Set(reflect.ValueOf(val))
-			debug("Applied '%v' to %s based on config '%s'\n", val, printableName, eDef.name)
+			newValue := reflect.ValueOf(val)
+			v.Set(newValue)
+			debug("Applied '%v' to %s based on config '%s'\n", newValue, printableName, eDef.name)
 		}
 	}
 	return nil
@@ -233,8 +234,12 @@ func setValueFromString(v reflect.Value, strVal string) error {
 			return err
 		}
 		v.SetBool(val)
+	case reflect.Slice:
+		// TODO: go on here (for other primitive types as well)
+		arr := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf("")), 2, 2)
+		v.Set(arr)
 	default:
-		return errors.New("Unsupported kind: " + v.Kind().String())
+		return fmt.Errorf("Unsupported kind: %s", v.Kind())
 	}
 	return nil
 }
@@ -252,6 +257,8 @@ func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
 	case reflect.Ptr:
 		elementType := fieldType.Elem()
 		return isOfPrimitiveType(elementType)
+	case reflect.Slice:
+		return true, nil
 	default:
 		return false, fmt.Errorf("Kind '%s' with type '%s' is not supported", kind, fieldType)
 	}
@@ -295,7 +302,7 @@ func parseCfgEntry(setting string, cfgType reflect.Type) (entryDefinition, error
 	if ok {
 		value := reflect.New(cfgType)
 		if err := setValueFromString(value.Elem(), defaultValue); err != nil {
-			return entryDefinition{}, err
+			return entryDefinition{}, errors.Wrap(err, "Parsing value from string")
 		}
 		result.def = value.Elem().Interface()
 	}
