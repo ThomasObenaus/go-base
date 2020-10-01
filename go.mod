@@ -6,7 +6,7 @@ require (
 	github.com/golang/mock v1.4.3
 	github.com/pkg/errors v0.8.1
 	github.com/rs/zerolog v1.17.2
-	github.com/spf13/cast v1.3.1 // indirect
+	github.com/spf13/cast v1.3.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.6.1
 	github.com/stretchr/testify v1.4.0

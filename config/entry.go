@@ -124,6 +124,10 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		flagSet.DurationSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]time.Duration), entry.usage)
 	case []int:
 		flagSet.IntSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int), entry.usage)
+	case []int32:
+		flagSet.Int32SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int32), entry.usage)
+	case []int64:
+		flagSet.Int64SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int64), entry.usage)
 	case []uint:
 		flagSet.UintSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]uint), entry.usage)
 	case []float64:

@@ -18,7 +18,7 @@ import (
 type Cfg struct {
 	//Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
 	//Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
-	Setting3 []string `cfg:"name:name;;desc:A string;;default:Hans"`
+	Setting3 []time.Duration `cfg:"name:name;;desc:A string;;default:23h10m5s,6m"`
 	//Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
 	//Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
 	//Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
@@ -44,7 +44,7 @@ type LevelB struct {
 
 func main() {
 
-	args := []string{"--port=1234", "--dry-run", "--name=heheh,kk"} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
+	args := []string{"--port=1234", "--dry-run"} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
@@ -183,6 +183,7 @@ type entryDefinition struct {
 }
 
 func setValueFromString(v reflect.Value, strVal string) error {
+
 	switch v.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 
@@ -235,13 +236,160 @@ func setValueFromString(v reflect.Value, strVal string) error {
 		}
 		v.SetBool(val)
 	case reflect.Slice:
-		// TODO: go on here (for other primitive types as well)
-		arr := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf("")), 2, 2)
+		arr, err := strToValueSlice(v.Type().Elem(), strVal)
+		if err != nil {
+			return errors.Wrap(err, "Setting a value from given string for a slice.")
+		}
 		v.Set(arr)
 	default:
 		return fmt.Errorf("Unsupported kind: %s", v.Kind())
 	}
 	return nil
+}
+
+// strToValueSlice takes the given string and tries to convert it to a slice of reflect.Type
+// but using the according type of the given reflect.Type.
+// It is expected that the string has the form "<element_1>,<element_n+1>, ...,<element_n>".
+// It is expected that the values of the given array (encoded in the given string) can be converted to the given type.
+// The parameter elementType is used as the target type of the slice to be generated.
+// Only primitive types are supported.
+func strToValueSlice(elementType reflect.Type, strVal string) (reflect.Value, error) {
+	debug("strToValueSlice(%v,'%s')\n", elementType, strVal)
+
+	splittedValues := strings.Split(strVal, ",")
+	numSplittedValues := len(splittedValues)
+
+	arr := reflect.MakeSlice(reflect.SliceOf(elementType), 0, numSplittedValues)
+	for _, element := range splittedValues {
+		value, err := strToValue(elementType, element)
+		if err != nil {
+			return reflect.Value{}, errors.Wrap(err, "Converting string to slice of reflect.Value")
+		}
+		arr = reflect.Append(arr, value)
+	}
+	return arr, nil
+}
+
+// strToValue converts the given string into a reflect.Value of the given elementType
+func strToValue(elementType reflect.Type, strVal string) (reflect.Value, error) {
+
+	// special treatment for time.Duration
+	if elementType == reflect.TypeOf(time.Duration(0)) {
+		dur, err := strToDuration(strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(dur), nil
+	}
+
+	switch elementType.Kind() {
+	case reflect.String:
+		return reflect.ValueOf(strVal), nil
+	case reflect.Int:
+		val, err := strToInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(int(val)), nil
+	case reflect.Int16:
+		val, err := strToInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(int16(val)), nil
+	case reflect.Int32:
+		val, err := strToInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(int32(val)), nil
+	case reflect.Int64:
+		val, err := strToInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(int64(val)), nil
+	case reflect.Uint:
+		val, err := strToUInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(uint(val)), nil
+	case reflect.Uint16:
+		val, err := strToUInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(uint16(val)), nil
+	case reflect.Uint32:
+		val, err := strToUInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(uint32(val)), nil
+	case reflect.Uint64:
+		val, err := strToUInt64(elementType, strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(uint64(val)), nil
+	case reflect.Float32:
+		val, err := strconv.ParseFloat(strVal, 32)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(float32(val)), nil
+	case reflect.Float64:
+		val, err := strconv.ParseFloat(strVal, 64)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(val), nil
+	case reflect.Bool:
+		val, err := strconv.ParseBool(strVal)
+		if err != nil {
+			return reflect.Value{}, err
+		}
+		return reflect.ValueOf(val), nil
+	default:
+		return reflect.Value{}, fmt.Errorf("Unable to convert '%s' to type '%s' (type not supported)", strVal, elementType)
+	}
+}
+
+func strToDuration(strVal string) (time.Duration, error) {
+	dur, err := time.ParseDuration(strVal)
+	if err != nil {
+		return 0, errors.Wrap(err, "Parsing str to time.Duration")
+	}
+	return dur, nil
+}
+
+func strToInt64(elementType reflect.Type, strVal string) (int64, error) {
+	val, err := strconv.ParseInt(strVal, 0, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "Parsing str to int")
+	}
+
+	// check for overflow
+	v := reflect.New(elementType).Elem()
+	if v.OverflowInt(int64(val)) {
+		return 0, fmt.Errorf("Int value too big: %s for %s", strVal, elementType)
+	}
+	return val, nil
+}
+
+func strToUInt64(elementType reflect.Type, strVal string) (uint64, error) {
+	val, err := strconv.ParseUint(strVal, 0, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "Parsing str to int")
+	}
+
+	// check for overflow
+	v := reflect.New(elementType).Elem()
+	if v.OverflowUint(uint64(val)) {
+		return 0, fmt.Errorf("Uint value too big: %s for %s", strVal, elementType)
+	}
+	return val, nil
 }
 
 func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
