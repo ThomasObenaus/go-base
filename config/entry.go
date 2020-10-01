@@ -116,6 +116,20 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		flagSet.DurationP(entry.name, entry.flagShortName, entry.defaultValue.(time.Duration), entry.usage)
 	case float64:
 		flagSet.Float64P(entry.name, entry.flagShortName, entry.defaultValue.(float64), entry.usage)
+	case []bool:
+		flagSet.BoolSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]bool), entry.usage)
+	case []string:
+		flagSet.StringArrayP(entry.name, entry.flagShortName, entry.defaultValue.([]string), entry.usage)
+	case []time.Duration:
+		flagSet.DurationSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]time.Duration), entry.usage)
+	case []int:
+		flagSet.IntSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int), entry.usage)
+	case []uint:
+		flagSet.UintSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]uint), entry.usage)
+	case []float64:
+		flagSet.Float64SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]float64), entry.usage)
+	case []float32:
+		flagSet.Float32SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]float32), entry.usage)
 	default:
 		return fmt.Errorf("Type %s is not yet supported", reflect.TypeOf(entry.defaultValue))
 	}
