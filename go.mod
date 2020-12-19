@@ -3,6 +3,7 @@ module github.com/ThomasObenaus/go-base
 go 1.13
 
 require (
+	github.com/davecgh/go-spew v1.1.1
 	github.com/golang/mock v1.4.3
 	github.com/pkg/errors v0.8.1
 	github.com/rs/zerolog v1.17.2

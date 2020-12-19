@@ -8,49 +8,94 @@ import (
 	"time"
 
 	"github.com/ThomasObenaus/go-base/config"
+	"github.com/davecgh/go-spew/spew"
 	"github.com/pkg/errors"
 )
 
+/*
+{
+	"name":"conf1",
+	"prio":1,
+	"immutable":true,
+	"config_store": {
+	  "file-path": "cfgs",
+	  "target-secrets": [
+		{
+		  "name": "secret1",
+		  "key": "23948239842kdsdkfj",
+		  "count": 12
+		}
+	  ]
+	},
+	"tasks": {
+	  "table-name": "tasks",
+	  "use-db": true
+	}
+}
+
+// according struct
+type cfg struct {
+	Name string `cfg:"name:name;;desc:the name of the config"`
+	Prio int `cfg:"name:prio;;desc:the prio;;default:0"`
+	Immutable bool `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
+	ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
+}
+
+type configStore struct {
+	FilePath string `cfg:"name:file-path;;desc:the path;;default:configs/"`
+	TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
+	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
+}
+
+type targetSecret struct {
+	Name string `cfg:"name:name;;desc:the name of the config"`
+	Key string `cfg:"name:name;;desc:the name of the config"`
+	Count int `cfg:"name:name;;desc:the name of the config;;default:0"`
+}
+*/
+
 // TODO: Fail in case there are duplicate settings configured
 // TODO: Custom function hooks for complex parsing
-// TODO: slices
+// TODO: How to define string default values?
+// TODO: Handle missing default as required
+
+// HINT: Desired schema:
+// cfg:"name:<name>;;desc:<description>;;default:<default value>"
+// ';;' is the separator
+// if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	//Setting1 time.Duration `cfg:"name:duration;;desc:A duration;;default:23h10m5s"`
-	//Setting2 bool          `cfg:"name:really;;desc:A bool;;default:true"`
-	Setting3 []time.Duration `cfg:"name:name;;desc:A string;;default:23h10m5s,6m"`
-	//Setting4 int           `cfg:"name:how-many;;desc:A int;;default:-19"`
-	//Setting5 uint          `cfg:"name:max;;desc:A uint;;default:256"`
-	//Setting6 float64       `cfg:"name:temp;;desc:A float;;default:-256.12302"`
-	//LevelA   LevelA        `cfg:"name:a;;desc:desc"`
-	//Port   int
-	//DryRun bool
-	//Setting3 int    `cfg:"name:bla.setting2;;desc:This is;;default:sdfsdf"`
-	//Setting4 int    `cfg:"name:bla.setting4;;desc:This is;;default:989"`
-	//Setting1  string `cfg:"name:bla.setting-one111;;desc:This is;;default:bla_default"`
-	//Setting2  string `cfg:"name:bla.setting-two;;desc:desc"`
-	//Setting3  CfgSub `cfg:"name:bla.setting-three;;desc:desc"`
+	Name      string `cfg:"name:name;;desc:the name of the config"`
+	Prio      int    `cfg:"name:prio;;desc:the prio;;default:0"`
+	Immutable bool   `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
+	//ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
 }
 
-type LevelA struct {
-	LevelA1 LevelB   //`cfg:"name:a.b;;desc:This is;;default:ABCDE"`
-	LevelA2 []string `cfg:"name:a.c;;desc:desc;;default:1,2,3,4"`
+type configStore struct {
+	FilePath      string         `cfg:"name:file-path;;desc:the path;;default:configs/"`
+	TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
+	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
 }
 
-type LevelB struct {
-	LevelB1 string        `cfg:"name:a.b.1;;desc:This is;;default:HANS"`
-	LevelB2 time.Duration `cfg:"name:a.b.duration;;desc:desc;;default:26m"`
+type targetSecret struct {
+	Name  string `cfg:"name:name;;desc:the name of the config"`
+	Key   string `cfg:"name:name;;desc:the name of the config"`
+	Count int    `cfg:"name:name;;desc:the name of the config;;default:0"`
 }
 
 func main() {
 
-	args := []string{"--port=1234", "--dry-run"} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
+	args := []string{
+		"--name=myconfig",
+	} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Success %v\n", parsedConfig)
+	fmt.Println("")
+	fmt.Println("SUCCESS")
+	spew.Dump(parsedConfig)
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
@@ -139,7 +184,8 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.E
 		fType := field.Type
 
 		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
-		debug("Extracting %s\n", printableName)
+		logPrefix := fmt.Sprintf("[Extract-(%s)]", printableName)
+		debug("%s type=%s\n", logPrefix, fType)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
@@ -147,31 +193,36 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.E
 			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
 		}
 
+		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
 		if !isPrimitive {
 			subEntries, err := extractConfigDefinition(fType, printableName)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrap(err, "Extracting subentries")
 			}
 			entries = append(entries, subEntries...)
+			debug("%s added entries %v\n", logPrefix, entries)
 			continue
 		}
 
 		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
 		// skip all fields without the cfg tag
 		if !hasCfgTag {
+			debug("%s no tag found\n", logPrefix)
 			continue
 		}
+		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
 		eDef, err := parseCfgEntry(cfgSetting, fType)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
 		}
+		debug("%s parsed config entry=%v\n", logPrefix, eDef)
 
 		// create and append the new config entry
 		entry := config.NewEntry(eDef.name, eDef.description, config.Default(eDef.def))
 		entries = append(entries, entry)
 
-		debug("Extracted %v \n", eDef)
+		debug("%s created new entry=%v\n", logPrefix, entry)
 	}
 	return entries, nil
 }
@@ -469,6 +520,7 @@ var configEntries = []config.Entry{
 func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
+
 	newConfigEntries, err := extractConfigDefinition(cfgType, "")
 	if err != nil {
 		return Cfg{}, err
