@@ -64,16 +64,16 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	ShouldBeSkipped string // this should be ignored since its not annotated
-	Name            string `cfg:"name:name;;desc:the name of the config"`
-	Prio            int    `cfg:"name:prio;;desc:the prio;;default:0"`
-	Immutable       bool   `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
-	//ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
+	//ShouldBeSkipped string      // this should be ignored since its not annotated
+	//Name            string      `cfg:"name:name;;desc:the name of the config"`
+	//Prio            int         `cfg:"name:prio;;desc:the prio;;default:0"`
+	//Immutable       bool        `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
+	ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
 }
 
 type configStore struct {
-	FilePath      string         `cfg:"name:file-path;;desc:the path;;default:configs/"`
-	TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
+	FilePath string `cfg:"name:file-path;;desc:the path;;default:configs/"`
+	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
 	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
 }
 
@@ -86,8 +86,8 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
-		"--prio=10",
-	} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
+		"--config-store.file-path=/devops",
+	}
 
 	parsedConfig, err := New(args, "ABCDE")
 	if err != nil {
@@ -116,7 +116,7 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 	tCfg = tCfg.Elem()
 	vCfg = vCfg.Elem()
 
-	debug("[Apply-(%s)] typeOfInputConfig=%v stateOfInputConfig=%v\n", nameOfParent, tCfg, vCfg)
+	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParent, tCfg, vCfg)
 
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
@@ -126,7 +126,7 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
 		logPrefix := fmt.Sprintf("[Apply-(%s)]", printableName)
 
-		debug("%s type=%s\n", logPrefix, fType)
+		debug("%s field-type=%s field-value=%v\n", logPrefix, fType, v)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
@@ -152,7 +152,7 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseCfgEntry(cfgSetting, fType)
+		eDef, err := parseCfgEntry(cfgSetting, fType, nameOfParent)
 		if err != nil {
 			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
 		}
@@ -180,7 +180,14 @@ func debug(format string, a ...interface{}) {
 	}
 }
 
-func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.Entry, error) {
+func fullFieldName(nameOfParent string, fieldName string) string {
+	if len(nameOfParent) == 0 {
+		return fieldName
+	}
+	return fmt.Sprintf("%s.%s", nameOfParent, fieldName)
+}
+
+func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent entryDefinition) ([]config.Entry, error) {
 
 	entries := make([]config.Entry, 0)
 
@@ -188,31 +195,20 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.E
 	if tCfg.Kind() == reflect.Ptr {
 		tCfg = tCfg.Elem()
 	}
-	debug("[Extract-(%s) cfgType=%v\n", nameOfParent, tCfg)
+	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, tCfg, parent)
 
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
 		fType := field.Type
 
-		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
-		logPrefix := fmt.Sprintf("[Extract-(%s)]", printableName)
-		debug("%s type=%s\n", logPrefix, fType)
+		fieldName := fullFieldName(nameOfParentType, field.Name)
+		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
+		debug("%s field-type=%s\n", logPrefix, fType)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
-		}
-
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
-		if !isPrimitive {
-			subEntries, err := extractConfigDefinition(fType, printableName)
-			if err != nil {
-				return nil, errors.Wrap(err, "Extracting subentries")
-			}
-			entries = append(entries, subEntries...)
-			debug("%s added entries %v\n", logPrefix, entries)
-			continue
+			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
 		}
 
 		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
@@ -223,11 +219,22 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.E
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseCfgEntry(cfgSetting, fType)
+		eDef, err := parseCfgEntry(cfgSetting, fType, parent.name)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
+			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
 		}
 		debug("%s parsed config entry=%v\n", logPrefix, eDef)
+
+		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
+		if !isPrimitive {
+			subEntries, err := extractConfigDefinition(fType, fieldName, eDef)
+			if err != nil {
+				return nil, errors.Wrap(err, "Extracting subentries")
+			}
+			entries = append(entries, subEntries...)
+			debug("%s added entries %v\n", logPrefix, entries)
+			continue
+		}
 
 		// create and append the new config entry
 		entry := config.NewEntry(eDef.name, eDef.description, config.Default(eDef.def))
@@ -478,7 +485,7 @@ func (e entryDefinition) String() string {
 	return fmt.Sprintf(`n:"%s",d:"%s",df:%v`, e.name, e.description, e.def)
 }
 
-func parseCfgEntry(setting string, cfgType reflect.Type) (entryDefinition, error) {
+func parseCfgEntry(setting string, cfgType reflect.Type, nameOfParent string) (entryDefinition, error) {
 	setting = strings.TrimSpace(setting)
 	parts := strings.Split(setting, ";;")
 
@@ -500,7 +507,7 @@ func parseCfgEntry(setting string, cfgType reflect.Type) (entryDefinition, error
 	if !ok {
 		return entryDefinition{}, fmt.Errorf("Config key 'name' is missing but must be set (e.g. cfg:\"name:setting-one\")")
 	}
-	result.name = name
+	result.name = fullFieldName(nameOfParent, name)
 
 	desc, ok := elements["desc"]
 	if !ok {
@@ -532,7 +539,7 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
 
-	newConfigEntries, err := extractConfigDefinition(cfgType, "")
+	newConfigEntries, err := extractConfigDefinition(cfgType, "", entryDefinition{})
 	if err != nil {
 		return Cfg{}, err
 	}

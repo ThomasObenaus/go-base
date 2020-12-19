@@ -2,3 +2,5 @@
 coverage.out
 
 tmp/main
+
+tmp/air.log
