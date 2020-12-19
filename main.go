@@ -56,7 +56,6 @@ type targetSecret struct {
 
 // TODO: Fail in case there are duplicate settings configured
 // TODO: Custom function hooks for complex parsing
-// TODO: How to define string default values?
 // TODO: Handle missing default as required
 
 // HINT: Desired schema:
@@ -65,9 +64,10 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	Name      string `cfg:"name:name;;desc:the name of the config"`
-	Prio      int    `cfg:"name:prio;;desc:the prio;;default:0"`
-	Immutable bool   `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
+	ShouldBeSkipped string // this should be ignored since its not annotated
+	Name            string `cfg:"name:name;;desc:the name of the config"`
+	Prio            int    `cfg:"name:prio;;desc:the prio;;default:0"`
+	Immutable       bool   `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
 	//ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
 }
 
@@ -86,7 +86,7 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
-		"--name=myconfig",
+		"--prio=10",
 	} //, "--a.c=Hello World", "--a.b.duration=51m42s"} //, "--duration=15m", "--really", "--name=Harry"}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -116,47 +116,57 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 	tCfg = tCfg.Elem()
 	vCfg = vCfg.Elem()
 
+	debug("[Apply-(%s)] typeOfInputConfig=%v stateOfInputConfig=%v\n", nameOfParent, tCfg, vCfg)
+
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
 		fType := field.Type
 		v := vCfg.Field(i)
 		fieldValue := v.Addr().Interface()
 		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
+		logPrefix := fmt.Sprintf("[Apply-(%s)]", printableName)
 
-		debug("Applying %s\n", printableName)
+		debug("%s type=%s\n", logPrefix, fType)
 
 		// find out if we already have a primitive type
 		isPrimitive, err := isOfPrimitiveType(fType)
 		if err != nil {
 			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
 		}
+		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
 
 		// handling of non primitives (stucts)
 		if !isPrimitive {
 			if err := apply(provider, fieldValue, printableName); err != nil {
-				return err
+				return errors.Wrap(err, "Applying non primitive")
 			}
+			debug("%s applied non primitive %v\n", logPrefix, fieldValue)
 			continue
 		}
 
 		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
 		// ignore fields without a config tag
 		if !hasCfgTag {
+			debug("%s no tag found entry will be skipped\n", logPrefix)
 			continue
 		}
+		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
 		eDef, err := parseCfgEntry(cfgSetting, fType)
 		if err != nil {
 			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
 		}
 
-		// apply the value
-		if provider.IsSet(eDef.name) {
-			val := provider.Get(eDef.name)
-			newValue := reflect.ValueOf(val)
-			v.Set(newValue)
-			debug("Applied '%v' to %s based on config '%s'\n", newValue, printableName, eDef.name)
+		if !provider.IsSet(eDef.name) {
+			debug("%s parameter not provided, nothing will be applied\n", logPrefix)
+			continue
 		}
+
+		// apply the value
+		val := provider.Get(eDef.name)
+		newValue := reflect.ValueOf(val)
+		v.Set(newValue)
+		debug("%s apply value '%v' to '%s' based on config '%s'\n", logPrefix, newValue, printableName, eDef.name)
 	}
 	return nil
 }
@@ -178,6 +188,7 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.E
 	if tCfg.Kind() == reflect.Ptr {
 		tCfg = tCfg.Elem()
 	}
+	debug("[Extract-(%s) cfgType=%v\n", nameOfParent, tCfg)
 
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
@@ -207,7 +218,7 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParent string) ([]config.E
 		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
 		// skip all fields without the cfg tag
 		if !hasCfgTag {
-			debug("%s no tag found\n", logPrefix)
+			debug("%s no tag found entry will be skipped\n", logPrefix)
 			continue
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
