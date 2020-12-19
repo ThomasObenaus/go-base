@@ -72,21 +72,25 @@ type Cfg struct {
 }
 
 type configStore struct {
-	FilePath string `cfg:"name:file-path;;desc:the path;;default:configs/"`
+	FilePath     string       `cfg:"name:file-path;;desc:the path;;default:configs/"`
+	TargetSecret targetSecret `cfg:"name:target-secret;;desc:the secret"`
 	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
 	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
 }
 
 type targetSecret struct {
 	Name  string `cfg:"name:name;;desc:the name of the config"`
-	Key   string `cfg:"name:name;;desc:the name of the config"`
-	Count int    `cfg:"name:name;;desc:the name of the config;;default:0"`
+	Key   string `cfg:"name:key;;desc:the name of the config"`
+	Count int    `cfg:"name:count;;desc:the name of the config;;default:0"`
 }
 
 func main() {
 
 	args := []string{
 		"--config-store.file-path=/devops",
+		"--config-store.target-secret.key=#lsdpo93",
+		"--config-store.target-secret.name=mysecret",
+		"--config-store.target-secret.count=2323",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -99,10 +103,10 @@ func main() {
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
-	return apply(provider, target, "")
+	return apply(provider, target, "", entryDefinition{})
 }
 
-func apply(provider config.Provider, target interface{}, nameOfParent string) error {
+func apply(provider config.Provider, target interface{}, nameOfParentType string, parent entryDefinition) error {
 	tCfg := reflect.TypeOf(target)
 	vCfg := reflect.ValueOf(target)
 
@@ -116,33 +120,17 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 	tCfg = tCfg.Elem()
 	vCfg = vCfg.Elem()
 
-	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParent, tCfg, vCfg)
+	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, tCfg, vCfg)
 
 	for i := 0; i < tCfg.NumField(); i++ {
 		field := tCfg.Field(i)
 		fType := field.Type
 		v := vCfg.Field(i)
 		fieldValue := v.Addr().Interface()
-		printableName := fmt.Sprintf("%s.%s", nameOfParent, field.Name)
-		logPrefix := fmt.Sprintf("[Apply-(%s)]", printableName)
+		fieldName := fullFieldName(nameOfParentType, field.Name)
+		logPrefix := fmt.Sprintf("[Apply-(%s)]", fieldName)
 
 		debug("%s field-type=%s field-value=%v\n", logPrefix, fType, v)
-
-		// find out if we already have a primitive type
-		isPrimitive, err := isOfPrimitiveType(fType)
-		if err != nil {
-			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", printableName)
-		}
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
-
-		// handling of non primitives (stucts)
-		if !isPrimitive {
-			if err := apply(provider, fieldValue, printableName); err != nil {
-				return errors.Wrap(err, "Applying non primitive")
-			}
-			debug("%s applied non primitive %v\n", logPrefix, fieldValue)
-			continue
-		}
 
 		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
 		// ignore fields without a config tag
@@ -152,9 +140,25 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseCfgEntry(cfgSetting, fType, nameOfParent)
+		eDef, err := parseCfgEntry(cfgSetting, fType, parent.name)
 		if err != nil {
-			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", printableName)
+			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
+		}
+
+		// find out if we already have a primitive type
+		isPrimitive, err := isOfPrimitiveType(fType)
+		if err != nil {
+			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
+		}
+		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
+
+		// handling of non primitives (stucts)
+		if !isPrimitive {
+			if err := apply(provider, fieldValue, nameOfParentType, eDef); err != nil {
+				return errors.Wrap(err, "Applying non primitive")
+			}
+			debug("%s applied non primitive %v\n", logPrefix, fieldValue)
+			continue
 		}
 
 		if !provider.IsSet(eDef.name) {
@@ -166,7 +170,7 @@ func apply(provider config.Provider, target interface{}, nameOfParent string) er
 		val := provider.Get(eDef.name)
 		newValue := reflect.ValueOf(val)
 		v.Set(newValue)
-		debug("%s apply value '%v' to '%s' based on config '%s'\n", logPrefix, newValue, printableName, eDef.name)
+		debug("%s apply value '%v' to '%s' based on config '%s'\n", logPrefix, newValue, fieldName, eDef.name)
 	}
 	return nil
 }
