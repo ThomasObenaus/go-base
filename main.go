@@ -58,7 +58,8 @@ type targetSecret struct {
 // TODO: Fail in case there are duplicate settings configured
 // TODO: Custom function hooks for complex parsing
 // TODO: Handle missing default as required
-// TODO: Support for int
+// TODO: Support for slices of primitives
+// TODO: Support for slices of structs
 
 // HINT: Desired schema:
 // cfg:"name:<name>;;desc:<description>;;default:<default value>"
@@ -71,6 +72,7 @@ type Cfg struct {
 	Prio        int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
 	Immutable   bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
 	ConfigStore configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	Levels      []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
 }
 
 type configStore struct {
@@ -518,9 +520,23 @@ func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent stri
 			return entryDefinition{}, fmt.Errorf("Default values on struct level are not allowed")
 		}
 
-		// cast the parsed default value to the target type
-		castedToTargetType := reflect.ValueOf(parsedDefinition.Def).Convert(typeOfEntry)
-		result.Def = castedToTargetType.Interface()
+		switch typedDefaultValue := parsedDefinition.Def.(type) {
+		case []interface{}:
+			// obtain the element type
+			elementType := typeOfEntry.Elem()
+			sliceInTargetType := reflect.MakeSlice(typeOfEntry, 0, len(typedDefaultValue))
+
+			for _, rawDefaultValueElement := range typedDefaultValue {
+				castedToTargetType := reflect.ValueOf(rawDefaultValueElement).Convert(elementType)
+				sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
+			}
+
+			result.Def = sliceInTargetType.Interface()
+		default:
+			// cast the parsed default value to the target type
+			castedToTargetType := reflect.ValueOf(parsedDefinition.Def).Convert(typeOfEntry)
+			result.Def = castedToTargetType.Interface()
+		}
 	}
 
 	return result, nil
