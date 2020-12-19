@@ -513,6 +513,11 @@ func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent stri
 
 	// only in case a default value is given
 	if parsedDefinition.Def != nil {
+
+		if typeOfEntry.Kind() == reflect.Struct {
+			return entryDefinition{}, fmt.Errorf("Default values on struct level are not allowed")
+		}
+
 		// cast the parsed default value to the target type
 		castedToTargetType := reflect.ValueOf(parsedDefinition.Def).Convert(typeOfEntry)
 		result.Def = castedToTargetType.Interface()
