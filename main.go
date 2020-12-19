@@ -67,10 +67,10 @@ type targetSecret struct {
 
 type Cfg struct {
 	//ShouldBeSkipped string      // this should be ignored since its not annotated
-	Name      string `cfg:"{'name':'name','desc':'the name of the config'}"`
-	Prio      int    `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	Immutable bool   `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	//ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	Name        string      `cfg:"{'name':'name','desc':'the name of the config'}"`
+	Prio        int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	Immutable   bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	ConfigStore configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
 }
 
 type configStore struct {
@@ -81,9 +81,9 @@ type configStore struct {
 }
 
 type targetSecret struct {
-	Name  string  `cfg:"{'name':'name','desc':'the name of the secret'}"`
-	Key   string  `cfg:"{'name':'key','desc':'the key'}"`
-	Count float64 `cfg:"{'name':'count','desc':'the count','default':0.999}"`
+	Name  string `cfg:"{'name':'name','desc':'the name of the secret'}"`
+	Key   string `cfg:"{'name':'key','desc':'the key'}"`
+	Count int    `cfg:"{'name':'count','desc':'the count','default':0}"`
 }
 
 func main() {
@@ -92,10 +92,10 @@ func main() {
 		"--prio=23",
 		"--name=hello",
 		"--immutable=true",
-		//"--config-store.file-path=/devops",
-		//"--config-store.target-secret.key=#lsdpo93",
-		//"--config-store.target-secret.name=mysecret",
-		//"--config-store.target-secret.count=2323",
+		"--config-store.file-path=/devops",
+		"--config-store.target-secret.key=#lsdpo93",
+		"--config-store.target-secret.name=mysecret",
+		"--config-store.target-secret.count=2323",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
