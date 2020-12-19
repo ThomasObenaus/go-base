@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -57,6 +58,7 @@ type targetSecret struct {
 // TODO: Fail in case there are duplicate settings configured
 // TODO: Custom function hooks for complex parsing
 // TODO: Handle missing default as required
+// TODO: Support for int
 
 // HINT: Desired schema:
 // cfg:"name:<name>;;desc:<description>;;default:<default value>"
@@ -65,32 +67,35 @@ type targetSecret struct {
 
 type Cfg struct {
 	//ShouldBeSkipped string      // this should be ignored since its not annotated
-	//Name            string      `cfg:"name:name;;desc:the name of the config"`
-	//Prio            int         `cfg:"name:prio;;desc:the prio;;default:0"`
-	//Immutable       bool        `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
-	ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
+	Name      string `cfg:"{'name':'name','desc':'the name of the config'}"`
+	Prio      int    `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	Immutable bool   `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	//ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
 }
 
 type configStore struct {
-	FilePath     string       `cfg:"name:file-path;;desc:the path;;default:configs/"`
-	TargetSecret targetSecret `cfg:"name:target-secret;;desc:the secret"`
+	FilePath     string       `cfg:"{'name':'file-path','desc':'the path','default':'configs/'}"`
+	TargetSecret targetSecret `cfg:"{'name':'target-secret','desc':'the secret'}"`
 	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
 	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
 }
 
 type targetSecret struct {
-	Name  string `cfg:"name:name;;desc:the name of the config"`
-	Key   string `cfg:"name:key;;desc:the name of the config"`
-	Count int    `cfg:"name:count;;desc:the name of the config;;default:0"`
+	Name  string  `cfg:"{'name':'name','desc':'the name of the secret'}"`
+	Key   string  `cfg:"{'name':'key','desc':'the key'}"`
+	Count float64 `cfg:"{'name':'count','desc':'the count','default':0.999}"`
 }
 
 func main() {
 
 	args := []string{
-		"--config-store.file-path=/devops",
-		"--config-store.target-secret.key=#lsdpo93",
-		"--config-store.target-secret.name=mysecret",
-		"--config-store.target-secret.count=2323",
+		"--prio=23",
+		"--name=hello",
+		"--immutable=true",
+		//"--config-store.file-path=/devops",
+		//"--config-store.target-secret.key=#lsdpo93",
+		//"--config-store.target-secret.name=mysecret",
+		//"--config-store.target-secret.count=2323",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -140,7 +145,7 @@ func apply(provider config.Provider, target interface{}, nameOfParentType string
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseCfgEntry(cfgSetting, fType, parent.name)
+		eDef, err := parseCfgEntry(cfgSetting, fType, parent.Name)
 		if err != nil {
 			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
 		}
@@ -161,16 +166,16 @@ func apply(provider config.Provider, target interface{}, nameOfParentType string
 			continue
 		}
 
-		if !provider.IsSet(eDef.name) {
+		if !provider.IsSet(eDef.Name) {
 			debug("%s parameter not provided, nothing will be applied\n", logPrefix)
 			continue
 		}
 
 		// apply the value
-		val := provider.Get(eDef.name)
+		val := provider.Get(eDef.Name)
 		newValue := reflect.ValueOf(val)
 		v.Set(newValue)
-		debug("%s apply value '%v' to '%s' based on config '%s'\n", logPrefix, newValue, fieldName, eDef.name)
+		debug("%s apply value '%v' to '%s' based on config '%s'\n", logPrefix, newValue, fieldName, eDef.Name)
 	}
 	return nil
 }
@@ -223,7 +228,7 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent 
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseCfgEntry(cfgSetting, fType, parent.name)
+		eDef, err := parseCfgEntry(cfgSetting, fType, parent.Name)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
 		}
@@ -241,7 +246,7 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent 
 		}
 
 		// create and append the new config entry
-		entry := config.NewEntry(eDef.name, eDef.description, config.Default(eDef.def))
+		entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
 		entries = append(entries, entry)
 
 		debug("%s created new entry=%v\n", logPrefix, entry)
@@ -250,9 +255,9 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent 
 }
 
 type entryDefinition struct {
-	name        string
-	description string
-	def         interface{}
+	Name        string      `json:"name,omitempty"`
+	Description string      `json:"desc,omitempty"`
+	Def         interface{} `json:"default,omitempty"`
 }
 
 func setValueFromString(v reflect.Value, strVal string) error {
@@ -486,46 +491,31 @@ func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
 }
 
 func (e entryDefinition) String() string {
-	return fmt.Sprintf(`n:"%s",d:"%s",df:%v`, e.name, e.description, e.def)
+	return fmt.Sprintf(`n:"%s",d:"%s",df:%v`, e.Name, e.Description, e.Def)
 }
 
-func parseCfgEntry(setting string, cfgType reflect.Type, nameOfParent string) (entryDefinition, error) {
-	setting = strings.TrimSpace(setting)
-	parts := strings.Split(setting, ";;")
+func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent string) (entryDefinition, error) {
+	configTag = strings.TrimSpace(configTag)
+	// replace all single quotes by double quotes to get a valid json
+	configTag = strings.ReplaceAll(configTag, "'", `"`)
 
-	elements := make(map[string]string)
-	result := entryDefinition{}
-	for _, part := range parts {
-		kvp := strings.Split(part, ":")
-
-		if len(kvp) != 2 {
-			return entryDefinition{}, fmt.Errorf("unexpected len kvp (2!=%d)", len(kvp))
-		}
-
-		key := strings.ToLower(strings.TrimSpace(kvp[0]))
-		value := kvp[1]
-		elements[key] = value
+	// parse the config tag
+	parsedDefinition := entryDefinition{}
+	if err := json.Unmarshal([]byte(configTag), &parsedDefinition); err != nil {
+		return entryDefinition{}, errors.Wrapf(err, "Parsing entryDefinition from '%s'", configTag)
 	}
 
-	name, ok := elements["name"]
-	if !ok {
-		return entryDefinition{}, fmt.Errorf("Config key 'name' is missing but must be set (e.g. cfg:\"name:setting-one\")")
+	result := entryDefinition{
+		// update name to reflect the hierarchy
+		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
+		Description: parsedDefinition.Description,
 	}
-	result.name = fullFieldName(nameOfParent, name)
 
-	desc, ok := elements["desc"]
-	if !ok {
-		return entryDefinition{}, fmt.Errorf("Config key 'desc' is missing but must be set (e.g. cfg:\"desc:this setting does that\")")
-	}
-	result.description = desc
-
-	defaultValue, ok := elements["default"]
-	if ok {
-		value := reflect.New(cfgType)
-		if err := setValueFromString(value.Elem(), defaultValue); err != nil {
-			return entryDefinition{}, errors.Wrap(err, "Parsing value from string")
-		}
-		result.def = value.Elem().Interface()
+	// only in case a default value is given
+	if parsedDefinition.Def != nil {
+		// cast the parsed default value to the target type
+		castedToTargetType := reflect.ValueOf(parsedDefinition.Def).Convert(typeOfEntry)
+		result.Def = castedToTargetType.Interface()
 	}
 
 	return result, nil
