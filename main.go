@@ -71,9 +71,9 @@ type Cfg struct {
 	//Prio          int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
 	//Immutable     bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
 	//NumericLevels []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
-	//Levels        []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	//Levels []string `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
 	//ConfigStore   configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
-	TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets'}"`
+	TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231}]}"`
 }
 
 type configStore struct {
@@ -253,21 +253,19 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent 
 		}
 
 		// create and append the new config entry
-		if false {
-			//TODO deduct that we have a slice of structs
-			//bla := make([]map[string]interface{}, 0)
-			bla := []targetSecret{}
-			entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(bla))
-			entries = append(entries, entry)
-			debug("%s created new entry=%v\n", logPrefix, entry)
-		} else {
-			entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
-			entries = append(entries, entry)
-			debug("%s created new entry=%v\n", logPrefix, entry)
-		}
-
+		entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
+		entries = append(entries, entry)
+		debug("%s created new entry=%v\n", logPrefix, entry)
 	}
 	return entries, nil
+}
+
+func isSliceOfStructs(t reflect.Type) bool {
+	if t.Kind() != reflect.Slice {
+		return false
+	}
+	elementType := t.Elem()
+	return elementType.Kind() == reflect.Struct
 }
 
 type entryDefinition struct {
@@ -510,6 +508,29 @@ func (e entryDefinition) String() string {
 	return fmt.Sprintf(`n:"%s",d:"%s",df:%v`, e.Name, e.Description, e.Def)
 }
 
+func (e entryDefinition) IsRequired() bool {
+	return e.Def == nil
+}
+
+func parseCfgEntry2(configTag string, typeOfEntry reflect.Type, nameOfParent string) (entryDefinition, error) {
+	configTag = strings.TrimSpace(configTag)
+	// replace all single quotes by double quotes to get a valid json
+	configTag = strings.ReplaceAll(configTag, "'", `"`)
+
+	// parse the config tag
+	parsedDefinition := entryDefinition{}
+	if err := json.Unmarshal([]byte(configTag), &parsedDefinition); err != nil {
+		return entryDefinition{}, errors.Wrapf(err, "Parsing entryDefinition from '%s'", configTag)
+	}
+
+	result := entryDefinition{
+		// update name to reflect the hierarchy
+		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
+		Description: parsedDefinition.Description,
+	}
+	return result, nil
+}
+
 func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent string) (entryDefinition, error) {
 	configTag = strings.TrimSpace(configTag)
 	// replace all single quotes by double quotes to get a valid json
@@ -530,6 +551,7 @@ func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent stri
 	// only in case a default value is given
 	if parsedDefinition.Def != nil {
 
+		// TODO: Enable defaults on struct level, see how it is done for slices of stucts
 		if typeOfEntry.Kind() == reflect.Struct {
 			return entryDefinition{}, fmt.Errorf("Default values on struct level are not allowed")
 		}
@@ -541,8 +563,21 @@ func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent stri
 			sliceInTargetType := reflect.MakeSlice(typeOfEntry, 0, len(typedDefaultValue))
 
 			for _, rawDefaultValueElement := range typedDefaultValue {
-				castedToTargetType := reflect.ValueOf(rawDefaultValueElement).Convert(elementType)
-				sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
+
+				switch castedRawElement := rawDefaultValueElement.(type) {
+				case map[string]interface{}:
+					// handles structs
+					castedToTargetType, err := createAndMapStruct(elementType, castedRawElement)
+					if err != nil {
+						return entryDefinition{}, errors.Wrap(err, "Handling default value for element in a slice of structs")
+					}
+					sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
+				default:
+					// handles primitive elements (int, string, ...)
+					castedToTargetType := reflect.ValueOf(rawDefaultValueElement).Convert(elementType)
+					sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
+				}
+
 			}
 
 			result.Def = sliceInTargetType.Interface()
@@ -554,6 +589,41 @@ func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent stri
 	}
 
 	return result, nil
+}
+
+func createAndMapStruct(targetTypeOfStruct reflect.Type, data map[string]interface{}) (reflect.Value, error) {
+	// TODO: Support more than one level
+
+	newStruct := reflect.New(targetTypeOfStruct)
+	newStructValue := newStruct.Elem()
+
+	for i := 0; i < targetTypeOfStruct.NumField(); i++ {
+		fieldDeclaration := targetTypeOfStruct.Field(i)
+		fieldValue := newStructValue.FieldByName(fieldDeclaration.Name)
+		fieldType := fieldDeclaration.Type
+		configTag, hasConfig := fieldDeclaration.Tag.Lookup("cfg")
+		if !hasConfig {
+			continue
+		}
+
+		entry, err := parseCfgEntry2(configTag, fieldType, "")
+		if err != nil {
+			return reflect.Zero(targetTypeOfStruct), errors.Wrapf(err, "Parsing configTag '%s'", configTag)
+		}
+		val, ok := data[entry.Name]
+		if !ok {
+			if entry.IsRequired() {
+				return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Missing value for required field (struct-field='%s',expected-key='%s')", fieldDeclaration.Name, entry.Name)
+			}
+			continue
+		}
+
+		// cast the parsed default value to the target type
+		castedToTargetType := reflect.ValueOf(val).Convert(fieldType)
+		fieldValue.Set(castedToTargetType)
+	}
+
+	return newStructValue, nil
 }
 
 var port = config.NewEntry("port", "Port where sokar is listening.", config.Default(11000))
