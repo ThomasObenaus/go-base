@@ -119,7 +119,7 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 	case []bool:
 		flagSet.BoolSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]bool), entry.usage)
 	case []string:
-		flagSet.StringArrayP(entry.name, entry.flagShortName, entry.defaultValue.([]string), entry.usage)
+		flagSet.StringSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]string), entry.usage)
 	case []time.Duration:
 		flagSet.DurationSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]time.Duration), entry.usage)
 	case []int:

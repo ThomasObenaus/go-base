@@ -58,7 +58,6 @@ type targetSecret struct {
 // TODO: Fail in case there are duplicate settings configured
 // TODO: Custom function hooks for complex parsing
 // TODO: Handle missing default as required
-// TODO: Support for slices of primitives
 // TODO: Support for slices of structs
 
 // HINT: Desired schema:
@@ -67,12 +66,13 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	//ShouldBeSkipped string      // this should be ignored since its not annotated
-	Name        string      `cfg:"{'name':'name','desc':'the name of the config'}"`
-	Prio        int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	Immutable   bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	ConfigStore configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
-	Levels      []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	ShouldBeSkipped string      // this should be ignored since its not annotated
+	Name            string      `cfg:"{'name':'name','desc':'the name of the config'}"`
+	Prio            int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	Immutable       bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	NumericLevels   []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
+	Levels          []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
 }
 
 type configStore struct {
@@ -91,13 +91,14 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
-		"--prio=23",
-		"--name=hello",
-		"--immutable=true",
-		"--config-store.file-path=/devops",
-		"--config-store.target-secret.key=#lsdpo93",
-		"--config-store.target-secret.name=mysecret",
-		"--config-store.target-secret.count=2323",
+		//"--prio=23",
+		//"--name=hello",
+		//"--immutable=true",
+		//"--config-store.file-path=/devops",
+		//"--config-store.target-secret.key=#lsdpo93",
+		//"--config-store.target-secret.name=mysecret",
+		//"--config-store.target-secret.count=2323",
+		"--numeric-levels=1,2,3",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -176,8 +177,9 @@ func apply(provider config.Provider, target interface{}, nameOfParentType string
 		// apply the value
 		val := provider.Get(eDef.Name)
 		newValue := reflect.ValueOf(val)
+		typeOfValue := reflect.TypeOf(val)
 		v.Set(newValue)
-		debug("%s apply value '%v' to '%s' based on config '%s'\n", logPrefix, newValue, fieldName, eDef.Name)
+		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
 	}
 	return nil
 }
