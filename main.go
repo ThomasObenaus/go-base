@@ -66,20 +66,20 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	ShouldBeSkipped string      // this should be ignored since its not annotated
-	Name            string      `cfg:"{'name':'name','desc':'the name of the config'}"`
-	Prio            int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	Immutable       bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
-	NumericLevels   []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
-	Levels          []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	//ShouldBeSkipped string      // this should be ignored since its not annotated
+	//Name          string      `cfg:"{'name':'name','desc':'the name of the config'}"`
+	//Prio          int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	//Immutable     bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	//NumericLevels []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
+	//Levels        []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	//ConfigStore   configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets'}"`
 }
 
 type configStore struct {
 	FilePath     string       `cfg:"{'name':'file-path','desc':'the path','default':'configs/'}"`
 	TargetSecret targetSecret `cfg:"{'name':'target-secret','desc':'the secret'}"`
-	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
-	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
+	//TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets'}"`
 }
 
 type targetSecret struct {
@@ -98,7 +98,8 @@ func main() {
 		//"--config-store.target-secret.key=#lsdpo93",
 		//"--config-store.target-secret.name=mysecret",
 		//"--config-store.target-secret.count=2323",
-		"--numeric-levels=1,2,3",
+		//"--numeric-levels=1,2,3",
+		"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -178,8 +179,10 @@ func apply(provider config.Provider, target interface{}, nameOfParentType string
 		val := provider.Get(eDef.Name)
 		newValue := reflect.ValueOf(val)
 		typeOfValue := reflect.TypeOf(val)
+		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
 		v.Set(newValue)
 		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
+
 	}
 	return nil
 }
@@ -250,10 +253,19 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent 
 		}
 
 		// create and append the new config entry
-		entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
-		entries = append(entries, entry)
+		if false {
+			//TODO deduct that we have a slice of structs
+			//bla := make([]map[string]interface{}, 0)
+			bla := []targetSecret{}
+			entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(bla))
+			entries = append(entries, entry)
+			debug("%s created new entry=%v\n", logPrefix, entry)
+		} else {
+			entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
+			entries = append(entries, entry)
+			debug("%s created new entry=%v\n", logPrefix, entry)
+		}
 
-		debug("%s created new entry=%v\n", logPrefix, entry)
 	}
 	return entries, nil
 }

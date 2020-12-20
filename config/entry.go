@@ -1,8 +1,10 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -103,41 +105,71 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		return nil
 	}
 
-	switch entry.defaultValue.(type) {
+	switch castedDefaultValue := entry.defaultValue.(type) {
 	case string:
-		flagSet.StringP(entry.name, entry.flagShortName, entry.defaultValue.(string), entry.usage)
+		flagSet.StringP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case uint:
-		flagSet.UintP(entry.name, entry.flagShortName, entry.defaultValue.(uint), entry.usage)
+		flagSet.UintP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case int:
-		flagSet.IntP(entry.name, entry.flagShortName, entry.defaultValue.(int), entry.usage)
+		flagSet.IntP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case bool:
-		flagSet.BoolP(entry.name, entry.flagShortName, entry.defaultValue.(bool), entry.usage)
+		flagSet.BoolP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case time.Duration:
-		flagSet.DurationP(entry.name, entry.flagShortName, entry.defaultValue.(time.Duration), entry.usage)
+		flagSet.DurationP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case float64:
-		flagSet.Float64P(entry.name, entry.flagShortName, entry.defaultValue.(float64), entry.usage)
+		flagSet.Float64P(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []bool:
-		flagSet.BoolSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]bool), entry.usage)
+		flagSet.BoolSliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []string:
-		flagSet.StringSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]string), entry.usage)
+		flagSet.StringSliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []time.Duration:
-		flagSet.DurationSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]time.Duration), entry.usage)
+		flagSet.DurationSliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []int:
-		flagSet.IntSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int), entry.usage)
+		flagSet.IntSliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []int32:
-		flagSet.Int32SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int32), entry.usage)
+		flagSet.Int32SliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []int64:
-		flagSet.Int64SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]int64), entry.usage)
+		flagSet.Int64SliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []uint:
-		flagSet.UintSliceP(entry.name, entry.flagShortName, entry.defaultValue.([]uint), entry.usage)
+		flagSet.UintSliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []float64:
-		flagSet.Float64SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]float64), entry.usage)
+		flagSet.Float64SliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []float32:
-		flagSet.Float32SliceP(entry.name, entry.flagShortName, entry.defaultValue.([]float32), entry.usage)
+		flagSet.Float32SliceP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	default:
-		return fmt.Errorf("Type %s is not yet supported", reflect.TypeOf(entry.defaultValue))
+		typeOfDefaultValue := reflect.TypeOf(castedDefaultValue)
+		if typeOfDefaultValue.Kind() != reflect.Slice {
+			return fmt.Errorf("Type %s is not yet supported", typeOfDefaultValue)
+		}
+
+		// this part supports slices of custom structs and registers the according flag for it
+		sliceOfDefaultValue := reflect.MakeSlice(typeOfDefaultValue, 0, 0)
+		s := sliceOfMapStringToInterfaceFlag{
+			data: sliceOfDefaultValue.Interface(),
+		}
+		flagSet.VarP(&s, entry.name, entry.flagShortName, entry.usage)
+		return nil
 	}
 
+	return nil
+}
+
+type sliceOfMapStringToInterfaceFlag struct {
+	data interface{}
+}
+
+func (l *sliceOfMapStringToInterfaceFlag) String() string {
+	return fmt.Sprintf("%v", l.data)
+}
+func (l *sliceOfMapStringToInterfaceFlag) Type() string {
+	return "[]map[string]interface{}"
+}
+
+func (l *sliceOfMapStringToInterfaceFlag) Set(in string) error {
+	in = strings.ReplaceAll(in, "'", "\"")
+	if err := json.Unmarshal([]byte(in), &l.data); err != nil {
+		return err
+	}
 	return nil
 }
 
