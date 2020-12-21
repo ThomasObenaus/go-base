@@ -13,7 +13,59 @@ type testParseConfigTag struct {
 	nameOfParent string
 }
 
-func Test_parseConfigTag_NoParent(t *testing.T) {
+func Test_parseConfigTag_Struct(t *testing.T) {
+	type mystruct struct {
+		Field1 string `cfg:"{'name':'f1','default':'default'}"`
+		Field2 int    `cfg:"{'name':'f2','default':111}"`
+	}
+
+	// GIVEN
+	simpleStruct := testParseConfigTag{
+		configTagStr: "{'name':'string-slice','default':{'f1':'value1'}}",
+		typeOfEntry:  reflect.TypeOf(mystruct{}),
+	}
+
+	// WHEN + THEN
+	tag, err := parseConfigTag(simpleStruct.configTagStr, simpleStruct.typeOfEntry, simpleStruct.nameOfParent)
+	assert.NoError(t, err)
+	assert.Equal(t, mystruct{Field1: "value1", Field2: 111}, tag.Def)
+	assert.Equal(t, simpleStruct.typeOfEntry, reflect.TypeOf(tag.Def))
+	assert.False(t, tag.IsRequired())
+}
+
+func Test_parseConfigTag_Slices(t *testing.T) {
+	// GIVEN
+	stringSlice := testParseConfigTag{
+		configTagStr: "{'name':'string-slice','default':['default1','default2']}",
+		typeOfEntry:  reflect.TypeOf([]string{}),
+	}
+
+	// WHEN + THEN
+	tag, err := parseConfigTag(stringSlice.configTagStr, stringSlice.typeOfEntry, stringSlice.nameOfParent)
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"default1", "default2"}, tag.Def)
+	assert.Equal(t, stringSlice.typeOfEntry, reflect.TypeOf(tag.Def))
+	assert.False(t, tag.IsRequired())
+
+	type mystruct struct {
+		Field1 string `cfg:"{'name':'f1','default':'default'}"`
+	}
+
+	// GIVEN
+	structSlice := testParseConfigTag{
+		configTagStr: "{'name':'struct-slice','default':[{'f1':'value1'},{}]}",
+		typeOfEntry:  reflect.TypeOf([]mystruct{}),
+	}
+
+	// WHEN + THEN
+	tag, err = parseConfigTag(structSlice.configTagStr, structSlice.typeOfEntry, structSlice.nameOfParent)
+	assert.NoError(t, err)
+	assert.Equal(t, []mystruct{{Field1: "value1"}, {Field1: "default"}}, tag.Def)
+	assert.Equal(t, structSlice.typeOfEntry, reflect.TypeOf(tag.Def))
+	assert.False(t, tag.IsRequired())
+}
+
+func Test_parseConfigTag_Simple(t *testing.T) {
 	// GIVEN
 	simpleString := testParseConfigTag{
 		configTagStr: "{'name':'field-string','desc':'string field','default':'default'}",
@@ -75,6 +127,29 @@ func Test_parseConfigTag_NoParent(t *testing.T) {
 	assert.False(t, tagBool.IsRequired())
 }
 
+func Test_parseConfigTag_Required(t *testing.T) {
+	// GIVEN
+	simpleOptional := testParseConfigTag{
+		configTagStr: "{'name':'field-string','desc':'string field','default':'default'}",
+		typeOfEntry:  reflect.TypeOf(""),
+	}
+
+	// WHEN + THEN
+	tag, err := parseConfigTag(simpleOptional.configTagStr, simpleOptional.typeOfEntry, simpleOptional.nameOfParent)
+	assert.NoError(t, err)
+	assert.False(t, tag.IsRequired())
+
+	// GIVEN
+	simpleRequired := testParseConfigTag{
+		configTagStr: "{'name':'field-string','desc':'string field'}",
+		typeOfEntry:  reflect.TypeOf(""),
+	}
+
+	// WHEN + THEN
+	tag, err = parseConfigTag(simpleRequired.configTagStr, simpleRequired.typeOfEntry, simpleRequired.nameOfParent)
+	assert.NoError(t, err)
+	assert.True(t, tag.IsRequired())
+}
 func Test_extractConfigTags_Primitives(t *testing.T) {
 
 	// GIVEN
