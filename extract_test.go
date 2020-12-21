@@ -13,19 +13,24 @@ type testParseConfigTag struct {
 	nameOfParent string
 }
 
-// TODO: test lower
 func Test_parseConfigTag_Fail(t *testing.T) {
 	// GIVEN
 	invalidType1 := "{'name':'string-slice','default':['default1','default2']}"
 	invalidType2 := "{'name':'string-slice','default':['default1','default2']}"
+	invalid1 := "{}"
+	invalid2 := "just invalid [][}{"
 
 	// WHEN
 	_, errInvalidType1 := parseConfigTag(invalidType1, reflect.TypeOf(int(0)), "")
 	_, errInvalidType2 := parseConfigTag(invalidType2, reflect.TypeOf([]int{}), "")
+	_, errInvalid1 := parseConfigTag(invalid1, reflect.TypeOf([]int{}), "")
+	_, errInvalid2 := parseConfigTag(invalid2, reflect.TypeOf([]int{}), "")
 
 	// THEN
 	assert.Error(t, errInvalidType1)
 	assert.Error(t, errInvalidType2)
+	assert.Error(t, errInvalid1)
+	assert.Error(t, errInvalid2)
 }
 
 func Test_parseConfigTag_Struct(t *testing.T) {

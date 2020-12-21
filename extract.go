@@ -13,8 +13,7 @@ import (
 // configTag represents the definition for a config read from the type tag.
 // A config tag on a type is expected to be defined as:
 //
-// `cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>}"`
-//
+// 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>}"`
 type configTag struct {
 	Name        string      `json:"name,omitempty"`
 	Description string      `json:"desc,omitempty"`
@@ -31,7 +30,7 @@ func (e configTag) IsRequired() bool {
 }
 
 // parseConfigTag parses a definition like
-// `cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>}"`
+// 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>}"`
 // to a configTag
 func parseConfigTag(configTagStr string, typeOfEntry reflect.Type, nameOfParent string) (configTag, error) {
 	configTagStr = strings.TrimSpace(configTagStr)
@@ -42,6 +41,10 @@ func parseConfigTag(configTagStr string, typeOfEntry reflect.Type, nameOfParent 
 	parsedDefinition := configTag{}
 	if err := json.Unmarshal([]byte(configTagStr), &parsedDefinition); err != nil {
 		return configTag{}, errors.Wrapf(err, "Parsing configTag from '%s'", configTagStr)
+	}
+
+	if len(parsedDefinition.Name) == 0 {
+		return configTag{}, fmt.Errorf("Missing required config tag field 'name' on '%s'", configTagStr)
 	}
 
 	result := configTag{
@@ -87,7 +90,7 @@ func extractConfigTags(tCfg reflect.Type, nameOfParentType string, parent config
 			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
 		}
 
-		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
+		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
 		// skip all fields without the cfg tag
 		if !hasCfgTag {
 			debug("%s no tag found entry will be skipped\n", logPrefix)
@@ -142,7 +145,7 @@ func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent 
 			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
 		}
 
-		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
+		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
 		// skip all fields without the cfg tag
 		if !hasCfgTag {
 			debug("%s no tag found entry will be skipped\n", logPrefix)

@@ -141,7 +141,7 @@ func apply(provider config.Provider, target interface{}, nameOfParentType string
 
 		debug("%s field-type=%s field-value=%v\n", logPrefix, fType, v)
 
-		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
+		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
 		// ignore fields without a config tag
 		if !hasCfgTag {
 			debug("%s no tag found entry will be skipped\n", logPrefix)
@@ -458,51 +458,6 @@ func parseConfigTag2(configTagStr string, typeOfEntry reflect.Type, nameOfParent
 		Description: parsedDefinition.Description,
 	}
 	return result, nil
-}
-
-func createAndMapStruct(targetTypeOfStruct reflect.Type, data map[string]interface{}) (reflect.Value, error) {
-	// TODO: Support more than one level
-
-	newStruct := reflect.New(targetTypeOfStruct)
-	newStructValue := newStruct.Elem()
-
-	for i := 0; i < targetTypeOfStruct.NumField(); i++ {
-		fieldDeclaration := targetTypeOfStruct.Field(i)
-		fieldValue := newStructValue.FieldByName(fieldDeclaration.Name)
-		fieldType := fieldDeclaration.Type
-		configTag, hasConfig := fieldDeclaration.Tag.Lookup("cfg")
-		if !hasConfig {
-			continue
-		}
-
-		entry, err := parseConfigTag(configTag, fieldType, "")
-		if err != nil {
-			return reflect.Zero(targetTypeOfStruct), errors.Wrapf(err, "Parsing configTag '%s'", configTag)
-		}
-		val, ok := data[entry.Name]
-		if !ok {
-			if entry.IsRequired() {
-				return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Missing value for required field (struct-field='%s',expected-key='%s')", fieldDeclaration.Name, entry.Name)
-			}
-
-			// take the default value
-			val = entry.Def
-		}
-
-		// cast the parsed default value to the target type
-		castedToTargetType := reflect.ValueOf(val).Convert(fieldType)
-
-		// ensure that the casted value can be set
-		if !isFieldExported(fieldDeclaration) {
-			return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Can't set value for unexported field (struct-field='%s',key='%s').", fieldDeclaration.Name, entry.Name)
-		}
-		if !fieldValue.CanSet() {
-			return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Can't set value for field (struct-field='%s',key='%s').", fieldDeclaration.Name, entry.Name)
-		}
-		fieldValue.Set(castedToTargetType)
-	}
-
-	return newStructValue, nil
 }
 
 var port = config.NewEntry("port", "Port where sokar is listening.", config.Default(11000))

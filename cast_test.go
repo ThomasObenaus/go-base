@@ -7,6 +7,69 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func Test_createAndFillStruct_Fail(t *testing.T) {
+	// GIVEN
+	type my struct {
+		Field1 string `cfg:"{'name':'field_1'}"`
+	}
+
+	// WHEN
+	_, errMissingRequired := createAndFillStruct(reflect.TypeOf(my{}), map[string]interface{}{})
+
+	// THEN
+	assert.Error(t, errMissingRequired)
+
+	// GIVEN
+	type myInvalidConfig struct {
+		Field1 string `cfg:"{}"`
+	}
+
+	// WHEN
+	_, errInvalidConfig := createAndFillStruct(reflect.TypeOf(myInvalidConfig{}), map[string]interface{}{})
+
+	// THEN
+	assert.Error(t, errInvalidConfig)
+
+	// GIVEN
+	type myUnexportedField struct {
+		field1 string `cfg:"{'name':'field_1','default':'value'}"`
+	}
+
+	// WHEN
+	_, errUnexportedField := createAndFillStruct(reflect.TypeOf(myUnexportedField{}), map[string]interface{}{})
+
+	// THEN
+	assert.Error(t, errUnexportedField)
+}
+
+func Test_createAndFillStruct(t *testing.T) {
+	// GIVEN
+	type nested struct {
+		FieldA          float64 `cfg:"{'name':'field_a'}"`
+		ShouldBeIgnored bool
+	}
+
+	type my struct {
+		Field1          string `cfg:"{'name':'field_1'}"`
+		Field2          nested `cfg:"{'name':'field_2'}"`
+		ShouldBeIgnored bool
+	}
+
+	expected := my{Field1: "field-1", Field2: nested{FieldA: 22.22}}
+
+	data := map[string]interface{}{
+		"field_1": expected.Field1,
+		"field_2": expected.Field2,
+	}
+
+	// WHEN
+	structVal, err := createAndFillStruct(reflect.TypeOf(my{}), data)
+
+	// THEN
+	assert.NoError(t, err)
+	assert.Equal(t, expected, structVal.Interface())
+}
+
 func Test_castToSlice_Fail(t *testing.T) {
 	// GIVEN
 	vIntSlice := []int{11, 22}

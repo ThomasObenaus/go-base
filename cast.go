@@ -30,7 +30,7 @@ func castToStruct(rawValue interface{}, targetType reflect.Type) (interface{}, e
 	if !ok {
 		return nil, fmt.Errorf("Unable to cast %v (type=%T) to %v. Type must be map[string]interface{}", rawValue, rawValue, targetType)
 	}
-	castedToTargetType, err := createAndMapStruct(targetType, parsedDefinitionCastedToMap)
+	castedToTargetType, err := createAndFillStruct(targetType, parsedDefinitionCastedToMap)
 	if err != nil {
 		return nil, errors.Wrap(err, "Handling default value for element in a slice of structs")
 	}
@@ -56,7 +56,7 @@ func castToSlice(rawValue interface{}, targetType reflect.Type) (interface{}, er
 		switch castedRawElement := rawDefaultValueElement.(type) {
 		case map[string]interface{}:
 			// handles structs
-			castedToTargetType, err := createAndMapStruct(elementType, castedRawElement)
+			castedToTargetType, err := createAndFillStruct(elementType, castedRawElement)
 			if err != nil {
 				return nil, errors.Wrap(err, "Handling default value for element in a slice of structs")
 			}
@@ -74,6 +74,7 @@ func castToSlice(rawValue interface{}, targetType reflect.Type) (interface{}, er
 	return sliceInTargetType.Interface(), nil
 }
 
+// castToTargetType casts the given raw value to the given target type.
 func castToTargetType(rawUntypedValue interface{}, targetType reflect.Type) (interface{}, error) {
 	switch targetType.Kind() {
 	case reflect.Struct:
@@ -83,4 +84,62 @@ func castToTargetType(rawUntypedValue interface{}, targetType reflect.Type) (int
 	default:
 		return castToPrimitive(rawUntypedValue, targetType)
 	}
+}
+
+func getConfigTagDeclaration(fieldDeclaration reflect.StructField) (string, bool) {
+	return fieldDeclaration.Tag.Lookup("cfg")
+}
+
+// createAndFillStruct creates a struct based on the given type and fills its fields based on the given data.
+// For being able to fill the struct the given datas keys have to match the config tags that are defined on the target type.
+//
+// e.g. for type
+//
+//	type my struct {
+//		Field1 string `cfg:"{'name':'field_1'}"`
+//	}
+//
+// the data map should contain an entry with name 'field_1'
+// 	data := map[string]interface{}{"field_1":"a value"}
+func createAndFillStruct(targetTypeOfStruct reflect.Type, data map[string]interface{}) (reflect.Value, error) {
+	newStruct := reflect.New(targetTypeOfStruct)
+	newStructValue := newStruct.Elem()
+
+	for i := 0; i < targetTypeOfStruct.NumField(); i++ {
+		fieldDeclaration := targetTypeOfStruct.Field(i)
+		fieldValue := newStructValue.FieldByName(fieldDeclaration.Name)
+		fieldType := fieldDeclaration.Type
+		configTag, hasConfig := getConfigTagDeclaration(fieldDeclaration)
+		if !hasConfig {
+			continue
+		}
+
+		entry, err := parseConfigTag(configTag, fieldType, "")
+		if err != nil {
+			return reflect.Zero(targetTypeOfStruct), errors.Wrapf(err, "Parsing configTag '%s'", configTag)
+		}
+		val, ok := data[entry.Name]
+		if !ok {
+			if entry.IsRequired() {
+				return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Missing value for required field (struct-field='%s',expected-key='%s')", fieldDeclaration.Name, entry.Name)
+			}
+
+			// take the default value
+			val = entry.Def
+		}
+
+		// cast the parsed default value to the target type
+		castedToTargetType := reflect.ValueOf(val).Convert(fieldType)
+
+		// ensure that the casted value can be set
+		if !isFieldExported(fieldDeclaration) {
+			return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Can't set value for unexported field (struct-field='%s',key='%s').", fieldDeclaration.Name, entry.Name)
+		}
+		if !fieldValue.CanSet() {
+			return reflect.Zero(targetTypeOfStruct), fmt.Errorf("Can't set value for field (struct-field='%s',key='%s').", fieldDeclaration.Name, entry.Name)
+		}
+		fieldValue.Set(castedToTargetType)
+	}
+
+	return newStructValue, nil
 }
