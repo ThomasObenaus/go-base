@@ -19,6 +19,7 @@ type configTag struct {
 	Name        string      `json:"name,omitempty"`
 	Description string      `json:"desc,omitempty"`
 	Def         interface{} `json:"default,omitempty"`
+	desiredType reflect.Type
 }
 
 func (e configTag) String() string {
@@ -47,62 +48,17 @@ func parseConfigTag(configTagStr string, typeOfEntry reflect.Type, nameOfParent 
 		// update name to reflect the hierarchy
 		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
 		Description: parsedDefinition.Description,
+		desiredType: typeOfEntry,
 	}
 
 	// only in case a default value is given
 	if parsedDefinition.Def != nil {
-		// TODO: Enable defaults on struct level, see how it is done for slices of stucts
-		if typeOfEntry.Kind() == reflect.Struct {
-			parsedDefinitionCastedToMap, ok := parsedDefinition.Def.(map[string]interface{})
-			if !ok {
-				// TODO: return error
-				panic("sldfklsdfsdf")
-			}
-
-			// TODO: move to separate function
-			castedToTargetType, err := createAndMapStruct(typeOfEntry, parsedDefinitionCastedToMap)
-			if err != nil {
-				return configTag{}, errors.Wrap(err, "Handling default value for element in a slice of structs")
-			}
-			result.Def = castedToTargetType.Interface()
-		} else {
-
-			// TODO: move to separate function
-			// Handling of slices
-			switch typedDefaultValue := parsedDefinition.Def.(type) {
-			case []interface{}:
-				// obtain the element type
-				elementType := typeOfEntry.Elem()
-				sliceInTargetType := reflect.MakeSlice(typeOfEntry, 0, len(typedDefaultValue))
-
-				for _, rawDefaultValueElement := range typedDefaultValue {
-
-					switch castedRawElement := rawDefaultValueElement.(type) {
-					case map[string]interface{}:
-						// handles structs
-						// TODO: move to separate function
-						castedToTargetType, err := createAndMapStruct(elementType, castedRawElement)
-						if err != nil {
-							return configTag{}, errors.Wrap(err, "Handling default value for element in a slice of structs")
-						}
-						sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
-					default:
-						// handles primitive elements (int, string, ...)
-						castedToTargetType := reflect.ValueOf(rawDefaultValueElement).Convert(elementType)
-						sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
-					}
-
-				}
-
-				result.Def = sliceInTargetType.Interface()
-			default:
-				// cast the parsed default value to the target type
-				castedToTargetType := reflect.ValueOf(parsedDefinition.Def).Convert(typeOfEntry)
-				result.Def = castedToTargetType.Interface()
-			}
+		castedValue, err := castToTargetType(parsedDefinition.Def, typeOfEntry)
+		if err != nil {
+			return configTag{}, errors.Wrap(err, "Casting parsed default value to target type")
 		}
+		result.Def = castedValue
 	}
-
 	return result, nil
 }
 

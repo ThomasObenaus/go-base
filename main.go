@@ -55,7 +55,7 @@ type targetSecret struct {
 }
 */
 
-// TODO: Fail in case there are duplicate settings configured
+// TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Custom function hooks for complex parsing
 // TODO: Handle missing default as required
 // TODO: Support for slices of structs
