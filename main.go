@@ -57,8 +57,6 @@ type targetSecret struct {
 
 // TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Custom function hooks for complex parsing
-// TODO: Handle missing default as required
-// TODO: Support for slices of structs
 
 // HINT: Desired schema:
 // cfg:"name:<name>;;desc:<description>;;default:<default value>"
@@ -66,14 +64,14 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	//ShouldBeSkipped string      // this should be ignored since its not annotated
-	//Name          string      `cfg:"{'name':'name','desc':'the name of the config'}"`
-	//Prio          int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	//Immutable     bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	//NumericLevels []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
-	//Levels []string `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
-	//ConfigStore   configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
-	TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231}]}"`
+	ShouldBeSkipped string         // this should be ignored since its not annotated
+	Name            string         `cfg:"{'name':'name','desc':'the name of the config'}"`
+	Prio            int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	Immutable       bool           `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	NumericLevels   []int          `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
+	Levels          []string       `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	ConfigStore     configStore    `cfg:"{'name':'config-store','desc':'the config store'}"`
+	TargetSecrets   []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231},{'name':'mysecret','key':'sdlfks','count':231}]}"`
 }
 
 type configStore struct {
@@ -91,15 +89,15 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
-		//"--prio=23",
-		//"--name=hello",
-		//"--immutable=true",
-		//"--config-store.file-path=/devops",
-		//"--config-store.target-secret.key=#lsdpo93",
-		//"--config-store.target-secret.name=mysecret",
-		//"--config-store.target-secret.count=2323",
-		//"--numeric-levels=1,2,3",
-		"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
+		"--prio=23",
+		"--name=hello",
+		"--immutable=true",
+		"--config-store.file-path=/devops",
+		"--config-store.target-secret.key=#lsdpo93",
+		"--config-store.target-secret.name=mysecret",
+		"--config-store.target-secret.count=2323",
+		"--numeric-levels=1,2,3",
+		//"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -472,11 +470,16 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
 
-	newConfigEntries, err := extractConfigDefinition(cfgType, "", configTag{})
+	configTags, err := extractConfigTags(cfgType, "", configTag{})
 	if err != nil {
-		return Cfg{}, err
+		return Cfg{}, errors.Wrapf(err, "Extracting config tags from %v", cfgType)
 	}
-	configEntries = append(configEntries, newConfigEntries...)
+	for _, configTag := range configTags {
+		// create and append the new config entry
+		entry := config.NewEntry(configTag.Name, configTag.Description, config.Default(configTag.Def))
+		configEntries = append(configEntries, entry)
+		debug("created new entry=%v\n", entry)
+	}
 
 	provider := config.NewProvider(configEntries, serviceAbbreviation, serviceAbbreviation)
 	err = provider.ReadConfig(args)

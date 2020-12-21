@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/ThomasObenaus/go-base/config"
 	"github.com/pkg/errors"
 )
 
@@ -117,63 +116,6 @@ func extractConfigTags(tCfg reflect.Type, nameOfParentType string, parent config
 
 		entries = append(entries, eDef)
 		debug("%s created new entry=%v\n", logPrefix, eDef)
-	}
-	return entries, nil
-}
-
-func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent configTag) ([]config.Entry, error) {
-
-	entries := make([]config.Entry, 0)
-
-	// use the element type if we have a pointer
-	if tCfg.Kind() == reflect.Ptr {
-		tCfg = tCfg.Elem()
-	}
-	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, tCfg, parent)
-
-	for i := 0; i < tCfg.NumField(); i++ {
-		field := tCfg.Field(i)
-		fType := field.Type
-
-		fieldName := fullFieldName(nameOfParentType, field.Name)
-		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
-		debug("%s field-type=%s\n", logPrefix, fType)
-
-		// find out if we already have a primitive type
-		isPrimitive, err := isOfPrimitiveType(fType)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
-		}
-
-		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
-		// skip all fields without the cfg tag
-		if !hasCfgTag {
-			debug("%s no tag found entry will be skipped\n", logPrefix)
-			continue
-		}
-		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
-
-		eDef, err := parseConfigTag(cfgSetting, fType, parent.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
-		}
-		debug("%s parsed config entry=%v\n", logPrefix, eDef)
-
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
-		if !isPrimitive {
-			subEntries, err := extractConfigDefinition(fType, fieldName, eDef)
-			if err != nil {
-				return nil, errors.Wrap(err, "Extracting subentries")
-			}
-			entries = append(entries, subEntries...)
-			debug("%s added entries %v\n", logPrefix, entries)
-			continue
-		}
-
-		// create and append the new config entry
-		entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
-		entries = append(entries, entry)
-		debug("%s created new entry=%v\n", logPrefix, entry)
 	}
 	return entries, nil
 }
