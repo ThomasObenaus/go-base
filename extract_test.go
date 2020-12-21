@@ -177,6 +177,7 @@ func Test_parseConfigTag_Required(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, tag.IsRequired())
 }
+
 func Test_extractConfigTags_Primitives(t *testing.T) {
 
 	// GIVEN
@@ -239,4 +240,27 @@ func Test_extractConfigTags_Required(t *testing.T) {
 	assert.Len(t, entries, 2)
 	assert.False(t, entries[0].IsRequired())
 	assert.True(t, entries[1].IsRequired())
+}
+
+func Test_isOfPrimitiveType(t *testing.T) {
+	type my struct {
+	}
+
+	is1, err1 := isOfPrimitiveType(reflect.TypeOf(int(0)))
+	is2, err2 := isOfPrimitiveType(reflect.TypeOf(my{}))
+	is3, err3 := isOfPrimitiveType(reflect.TypeOf([]int{}))
+	is4, err4 := isOfPrimitiveType(reflect.TypeOf([]my{}))
+	i := 2
+	is5, err5 := isOfPrimitiveType(reflect.TypeOf(&i))
+
+	assert.NoError(t, err1)
+	assert.True(t, is1)
+	assert.NoError(t, err2)
+	assert.False(t, is2)
+	assert.NoError(t, err3)
+	assert.True(t, is3)
+	assert.NoError(t, err4)
+	assert.True(t, is4)
+	assert.NoError(t, err5)
+	assert.True(t, is5)
 }

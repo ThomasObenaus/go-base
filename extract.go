@@ -119,3 +119,25 @@ func extractConfigTags(tCfg reflect.Type, nameOfParentType string, parent config
 	}
 	return entries, nil
 }
+
+// isOfPrimitiveType returns true if the given type is a primitive one (can be easily casted).
+// This is also the case for slices.
+func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
+	kind := fieldType.Kind()
+	switch kind {
+	case reflect.Struct:
+		return false, nil
+	case reflect.String, reflect.Bool, reflect.Float32, reflect.Float64,
+		reflect.Complex64, reflect.Complex128, reflect.Int, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint16,
+		reflect.Uint32, reflect.Uint64:
+		return true, nil
+	case reflect.Ptr:
+		elementType := fieldType.Elem()
+		return isOfPrimitiveType(elementType)
+	case reflect.Slice:
+		return true, nil
+	default:
+		return false, fmt.Errorf("Kind '%s' with type '%s' is not supported", kind, fieldType)
+	}
+}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -57,6 +56,7 @@ type targetSecret struct {
 
 // TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Custom function hooks for complex parsing
+// TODO: Custom logger hook function
 
 // HINT: Desired schema:
 // cfg:"name:<name>;;desc:<description>;;default:<default value>"
@@ -64,14 +64,14 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	ShouldBeSkipped string         // this should be ignored since its not annotated
-	Name            string         `cfg:"{'name':'name','desc':'the name of the config'}"`
-	Prio            int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	Immutable       bool           `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	NumericLevels   []int          `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
-	Levels          []string       `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
-	ConfigStore     configStore    `cfg:"{'name':'config-store','desc':'the config store'}"`
-	TargetSecrets   []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231},{'name':'mysecret','key':'sdlfks','count':231}]}"`
+	//ShouldBeSkipped string         // this should be ignored since its not annotated
+	//Name            string         `cfg:"{'name':'name','desc':'the name of the config'}"`
+	//Prio            int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	//Immutable       bool           `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	//NumericLevels   []int          `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
+	//Levels          []string       `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	//ConfigStore configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231},{'name':'mysecret','key':'sdlfks','count':231}]}"`
 }
 
 type configStore struct {
@@ -89,15 +89,15 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
-		"--prio=23",
-		"--name=hello",
-		"--immutable=true",
-		"--config-store.file-path=/devops",
-		"--config-store.target-secret.key=#lsdpo93",
-		"--config-store.target-secret.name=mysecret",
-		"--config-store.target-secret.count=2323",
-		"--numeric-levels=1,2,3",
-		//"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
+		//"--prio=23",
+		//"--name=hello",
+		//"--immutable=true",
+		//"--config-store.file-path=/devops",
+		//"--config-store.target-secret.key=#lsdpo93",
+		//"--config-store.target-secret.name=mysecret",
+		//"--config-store.target-secret.count=2323",
+		//"--numeric-levels=1,2,3",
+		"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -417,45 +417,6 @@ func strToUInt64(elementType reflect.Type, strVal string) (uint64, error) {
 		return 0, fmt.Errorf("Uint value too big: %s for %s", strVal, elementType)
 	}
 	return val, nil
-}
-
-func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
-	kind := fieldType.Kind()
-	switch kind {
-	case reflect.Struct:
-		return false, nil
-	case reflect.String, reflect.Bool, reflect.Float32, reflect.Float64,
-		reflect.Complex64, reflect.Complex128, reflect.Int, reflect.Int16,
-		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint16,
-		reflect.Uint32, reflect.Uint64:
-		return true, nil
-	case reflect.Ptr:
-		elementType := fieldType.Elem()
-		return isOfPrimitiveType(elementType)
-	case reflect.Slice:
-		return true, nil
-	default:
-		return false, fmt.Errorf("Kind '%s' with type '%s' is not supported", kind, fieldType)
-	}
-}
-
-func parseConfigTag2(configTagStr string, typeOfEntry reflect.Type, nameOfParent string) (configTag, error) {
-	configTagStr = strings.TrimSpace(configTagStr)
-	// replace all single quotes by double quotes to get a valid json
-	configTagStr = strings.ReplaceAll(configTagStr, "'", `"`)
-
-	// parse the config tag
-	parsedDefinition := configTag{}
-	if err := json.Unmarshal([]byte(configTagStr), &parsedDefinition); err != nil {
-		return configTag{}, errors.Wrapf(err, "Parsing configTag from '%s'", configTagStr)
-	}
-
-	result := configTag{
-		// update name to reflect the hierarchy
-		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
-		Description: parsedDefinition.Description,
-	}
-	return result, nil
 }
 
 var port = config.NewEntry("port", "Port where sokar is listening.", config.Default(11000))
