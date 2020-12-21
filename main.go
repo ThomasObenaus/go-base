@@ -112,10 +112,10 @@ func main() {
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
-	return apply(provider, target, "", entryDefinition{})
+	return apply(provider, target, "", configTag{})
 }
 
-func apply(provider config.Provider, target interface{}, nameOfParentType string, parent entryDefinition) error {
+func apply(provider config.Provider, target interface{}, nameOfParentType string, parent configTag) error {
 	tCfg := reflect.TypeOf(target)
 	vCfg := reflect.ValueOf(target)
 
@@ -149,7 +149,7 @@ func apply(provider config.Provider, target interface{}, nameOfParentType string
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseCfgEntry(cfgSetting, fType, parent.Name)
+		eDef, err := parseConfigTag(cfgSetting, fType, parent.Name)
 		if err != nil {
 			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
 		}
@@ -203,75 +203,12 @@ func fullFieldName(nameOfParent string, fieldName string) string {
 	return fmt.Sprintf("%s.%s", nameOfParent, fieldName)
 }
 
-func extractConfigDefinition(tCfg reflect.Type, nameOfParentType string, parent entryDefinition) ([]config.Entry, error) {
-
-	entries := make([]config.Entry, 0)
-
-	// use the element type if we have a pointer
-	if tCfg.Kind() == reflect.Ptr {
-		tCfg = tCfg.Elem()
-	}
-	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, tCfg, parent)
-
-	for i := 0; i < tCfg.NumField(); i++ {
-		field := tCfg.Field(i)
-		fType := field.Type
-
-		fieldName := fullFieldName(nameOfParentType, field.Name)
-		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
-		debug("%s field-type=%s\n", logPrefix, fType)
-
-		// find out if we already have a primitive type
-		isPrimitive, err := isOfPrimitiveType(fType)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
-		}
-
-		cfgSetting, hasCfgTag := field.Tag.Lookup("cfg")
-		// skip all fields without the cfg tag
-		if !hasCfgTag {
-			debug("%s no tag found entry will be skipped\n", logPrefix)
-			continue
-		}
-		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
-
-		eDef, err := parseCfgEntry(cfgSetting, fType, parent.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
-		}
-		debug("%s parsed config entry=%v\n", logPrefix, eDef)
-
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
-		if !isPrimitive {
-			subEntries, err := extractConfigDefinition(fType, fieldName, eDef)
-			if err != nil {
-				return nil, errors.Wrap(err, "Extracting subentries")
-			}
-			entries = append(entries, subEntries...)
-			debug("%s added entries %v\n", logPrefix, entries)
-			continue
-		}
-
-		// create and append the new config entry
-		entry := config.NewEntry(eDef.Name, eDef.Description, config.Default(eDef.Def))
-		entries = append(entries, entry)
-		debug("%s created new entry=%v\n", logPrefix, entry)
-	}
-	return entries, nil
-}
-
 func isSliceOfStructs(t reflect.Type) bool {
 	if t.Kind() != reflect.Slice {
 		return false
 	}
 	elementType := t.Elem()
 	return elementType.Kind() == reflect.Struct
-}
-
-type entryDefinition struct {
-	Name        string      `json:"name,omitempty"`
-	Description string      `json:"desc,omitempty"`
-	Def         interface{} `json:"default,omitempty"`
 }
 
 func setValueFromString(v reflect.Value, strVal string) error {
@@ -504,90 +441,22 @@ func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
 	}
 }
 
-func (e entryDefinition) String() string {
-	return fmt.Sprintf(`n:"%s",d:"%s",df:%v`, e.Name, e.Description, e.Def)
-}
-
-func (e entryDefinition) IsRequired() bool {
-	return e.Def == nil
-}
-
-func parseCfgEntry2(configTag string, typeOfEntry reflect.Type, nameOfParent string) (entryDefinition, error) {
-	configTag = strings.TrimSpace(configTag)
+func parseConfigTag2(configTagStr string, typeOfEntry reflect.Type, nameOfParent string) (configTag, error) {
+	configTagStr = strings.TrimSpace(configTagStr)
 	// replace all single quotes by double quotes to get a valid json
-	configTag = strings.ReplaceAll(configTag, "'", `"`)
+	configTagStr = strings.ReplaceAll(configTagStr, "'", `"`)
 
 	// parse the config tag
-	parsedDefinition := entryDefinition{}
-	if err := json.Unmarshal([]byte(configTag), &parsedDefinition); err != nil {
-		return entryDefinition{}, errors.Wrapf(err, "Parsing entryDefinition from '%s'", configTag)
+	parsedDefinition := configTag{}
+	if err := json.Unmarshal([]byte(configTagStr), &parsedDefinition); err != nil {
+		return configTag{}, errors.Wrapf(err, "Parsing configTag from '%s'", configTagStr)
 	}
 
-	result := entryDefinition{
+	result := configTag{
 		// update name to reflect the hierarchy
 		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
 		Description: parsedDefinition.Description,
 	}
-	return result, nil
-}
-
-func parseCfgEntry(configTag string, typeOfEntry reflect.Type, nameOfParent string) (entryDefinition, error) {
-	configTag = strings.TrimSpace(configTag)
-	// replace all single quotes by double quotes to get a valid json
-	configTag = strings.ReplaceAll(configTag, "'", `"`)
-
-	// parse the config tag
-	parsedDefinition := entryDefinition{}
-	if err := json.Unmarshal([]byte(configTag), &parsedDefinition); err != nil {
-		return entryDefinition{}, errors.Wrapf(err, "Parsing entryDefinition from '%s'", configTag)
-	}
-
-	result := entryDefinition{
-		// update name to reflect the hierarchy
-		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
-		Description: parsedDefinition.Description,
-	}
-
-	// only in case a default value is given
-	if parsedDefinition.Def != nil {
-
-		// TODO: Enable defaults on struct level, see how it is done for slices of stucts
-		if typeOfEntry.Kind() == reflect.Struct {
-			return entryDefinition{}, fmt.Errorf("Default values on struct level are not allowed")
-		}
-
-		switch typedDefaultValue := parsedDefinition.Def.(type) {
-		case []interface{}:
-			// obtain the element type
-			elementType := typeOfEntry.Elem()
-			sliceInTargetType := reflect.MakeSlice(typeOfEntry, 0, len(typedDefaultValue))
-
-			for _, rawDefaultValueElement := range typedDefaultValue {
-
-				switch castedRawElement := rawDefaultValueElement.(type) {
-				case map[string]interface{}:
-					// handles structs
-					castedToTargetType, err := createAndMapStruct(elementType, castedRawElement)
-					if err != nil {
-						return entryDefinition{}, errors.Wrap(err, "Handling default value for element in a slice of structs")
-					}
-					sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
-				default:
-					// handles primitive elements (int, string, ...)
-					castedToTargetType := reflect.ValueOf(rawDefaultValueElement).Convert(elementType)
-					sliceInTargetType = reflect.Append(sliceInTargetType, castedToTargetType)
-				}
-
-			}
-
-			result.Def = sliceInTargetType.Interface()
-		default:
-			// cast the parsed default value to the target type
-			castedToTargetType := reflect.ValueOf(parsedDefinition.Def).Convert(typeOfEntry)
-			result.Def = castedToTargetType.Interface()
-		}
-	}
-
 	return result, nil
 }
 
@@ -606,7 +475,7 @@ func createAndMapStruct(targetTypeOfStruct reflect.Type, data map[string]interfa
 			continue
 		}
 
-		entry, err := parseCfgEntry2(configTag, fieldType, "")
+		entry, err := parseConfigTag2(configTag, fieldType, "")
 		if err != nil {
 			return reflect.Zero(targetTypeOfStruct), errors.Wrapf(err, "Parsing configTag '%s'", configTag)
 		}
@@ -638,7 +507,7 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
 
-	newConfigEntries, err := extractConfigDefinition(cfgType, "", entryDefinition{})
+	newConfigEntries, err := extractConfigDefinition(cfgType, "", configTag{})
 	if err != nil {
 		return Cfg{}, err
 	}
