@@ -143,3 +143,10 @@ func createAndFillStruct(targetTypeOfStruct reflect.Type, data map[string]interf
 
 	return newStructValue, nil
 }
+
+func fullFieldName(nameOfParent string, fieldName string) string {
+	if len(nameOfParent) == 0 {
+		return fieldName
+	}
+	return fmt.Sprintf("%s.%s", nameOfParent, fieldName)
+}

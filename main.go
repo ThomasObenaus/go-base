@@ -194,13 +194,6 @@ func debug(format string, a ...interface{}) {
 	}
 }
 
-func fullFieldName(nameOfParent string, fieldName string) string {
-	if len(nameOfParent) == 0 {
-		return fieldName
-	}
-	return fmt.Sprintf("%s.%s", nameOfParent, fieldName)
-}
-
 func isSliceOfStructs(t reflect.Type) bool {
 	if t.Kind() != reflect.Slice {
 		return false

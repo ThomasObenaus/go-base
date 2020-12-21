@@ -225,3 +225,9 @@ func Test_isFieldExported(t *testing.T) {
 	assert.True(t, isFieldExported(exportedField))
 	assert.False(t, isFieldExported(unExportedField))
 }
+
+func Test_fullFieldName(t *testing.T) {
+	assert.Equal(t, "root", fullFieldName("", "root"))
+	assert.Equal(t, "root.child", fullFieldName("root", "child"))
+	assert.Equal(t, "root.children.child", fullFieldName("root.children", "child"))
+}
