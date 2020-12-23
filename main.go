@@ -64,14 +64,14 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	//ShouldBeSkipped string         // this should be ignored since its not annotated
-	//Name            string         `cfg:"{'name':'name','desc':'the name of the config'}"`
-	//Prio            int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	//Immutable       bool           `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	//NumericLevels   []int          `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
-	//Levels          []string       `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
-	//ConfigStore configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
-	TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231},{'name':'mysecret','key':'sdlfks','count':231}]}"`
+	ShouldBeSkipped string // this should be ignored since its not annotated
+	Name            string `cfg:"{'name':'name','desc':'the name of the config'}"`
+	//Prio            int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	//Immutable       bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	//NumericLevels   []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
+	//Levels          []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	//ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	//TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231},{'name':'mysecret','key':'sdlfks','count':231}]}"`
 }
 
 type configStore struct {
@@ -97,7 +97,7 @@ func main() {
 		//"--config-store.target-secret.name=mysecret",
 		//"--config-store.target-secret.count=2323",
 		//"--numeric-levels=1,2,3",
-		"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
+		//"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
 	}
 
 	parsedConfig, err := New(args, "ABCDE")
@@ -110,79 +110,7 @@ func main() {
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
-	return apply(provider, target, "", configTag{})
-}
-
-func apply(provider config.Provider, target interface{}, nameOfParentType string, parent configTag) error {
-	tCfg := reflect.TypeOf(target)
-	vCfg := reflect.ValueOf(target)
-
-	isNilPtr := vCfg.Kind() == reflect.Ptr && vCfg.IsNil()
-	isNotSupportedField := vCfg.Kind() != reflect.Ptr
-	if isNotSupportedField || isNilPtr {
-		return fmt.Errorf("Can't handle %v (kind=%s,value=%v) (probably the type is not supported)", tCfg, tCfg.Kind(), vCfg)
-	}
-
-	// use the element type since we have a pointer
-	tCfg = tCfg.Elem()
-	vCfg = vCfg.Elem()
-
-	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, tCfg, vCfg)
-
-	for i := 0; i < tCfg.NumField(); i++ {
-		field := tCfg.Field(i)
-		fType := field.Type
-		v := vCfg.Field(i)
-		fieldValue := v.Addr().Interface()
-		fieldName := fullFieldName(nameOfParentType, field.Name)
-		logPrefix := fmt.Sprintf("[Apply-(%s)]", fieldName)
-
-		debug("%s field-type=%s field-value=%v\n", logPrefix, fType, v)
-
-		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
-		// ignore fields without a config tag
-		if !hasCfgTag {
-			debug("%s no tag found entry will be skipped\n", logPrefix)
-			continue
-		}
-		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
-
-		eDef, err := parseConfigTag(cfgSetting, fType, parent.Name)
-		if err != nil {
-			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
-		}
-
-		// find out if we already have a primitive type
-		isPrimitive, err := isOfPrimitiveType(fType)
-		if err != nil {
-			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
-		}
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
-
-		// handling of non primitives (stucts)
-		if !isPrimitive {
-			if err := apply(provider, fieldValue, nameOfParentType, eDef); err != nil {
-				return errors.Wrap(err, "Applying non primitive")
-			}
-			debug("%s applied non primitive %v\n", logPrefix, fieldValue)
-			continue
-		}
-
-		if !provider.IsSet(eDef.Name) {
-			debug("%s parameter not provided, nothing will be applied\n", logPrefix)
-			continue
-		}
-
-		// apply the value
-		val := provider.Get(eDef.Name)
-		newValue := reflect.ValueOf(val)
-		typeOfValue := reflect.TypeOf(val)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
-		v.Set(newValue)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
-
-	}
-	return nil
+	return applyConfig(provider, target, "", configTag{})
 }
 
 var verbose = true
@@ -432,7 +360,7 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 		// create and append the new config entry
 		entry := config.NewEntry(configTag.Name, configTag.Description, config.Default(configTag.Def))
 		configEntries = append(configEntries, entry)
-		debug("created new entry=%v\n", entry)
+		debug("Added new config new entry=%v\n", entry)
 	}
 
 	provider := config.NewProvider(configEntries, serviceAbbreviation, serviceAbbreviation)

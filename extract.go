@@ -21,7 +21,7 @@ type configTag struct {
 }
 
 func (e configTag) String() string {
-	return fmt.Sprintf(`n:"%s",d:"%s",df:%v`, e.Name, e.Description, e.Def)
+	return fmt.Sprintf(`name:"%s",desc:"%s",default:%v`, e.Name, e.Description, e.Def)
 }
 
 func (e configTag) IsRequired() bool {
@@ -64,58 +64,79 @@ func parseConfigTag(configTagStr string, typeOfEntry reflect.Type, nameOfParent 
 	return result, nil
 }
 
+// extractConfigTagFromStructField extracts the configTag from the given StructField.
+func extractConfigTagFromStructField(field reflect.StructField, nameOfParentType string, parent configTag) (isPrimitive bool, tag configTag, hasConfigTag bool, err error) {
+
+	fType := field.Type
+
+	fieldName := fullFieldName(nameOfParentType, field.Name)
+	logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
+
+	// find out if we already have a primitive type
+	isPrimitive, err = isOfPrimitiveType(fType)
+	if err != nil {
+		return false, configTag{}, false, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
+	}
+
+	cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
+	// ignore fields without a config tag
+	if !hasCfgTag {
+		return isPrimitive, configTag{}, false, nil
+	}
+	debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
+
+	eDef, err := parseConfigTag(cfgSetting, fType, parent.Name)
+	if err != nil {
+		return isPrimitive, configTag{}, false, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
+	}
+
+	return isPrimitive, eDef, true, nil
+}
+
 // extractConfigTags extracts recursively all configTags from the given type.
-func extractConfigTags(tCfg reflect.Type, nameOfParentType string, parent configTag) ([]configTag, error) {
+func extractConfigTags(targetType reflect.Type, nameOfParentType string, parent configTag) ([]configTag, error) {
 
 	entries := make([]configTag, 0)
 
 	// use the element type if we have a pointer
-	if tCfg.Kind() == reflect.Ptr {
-		tCfg = tCfg.Elem()
+	if targetType.Kind() == reflect.Ptr {
+		targetType = targetType.Elem()
 	}
-	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, tCfg, parent)
+	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, targetType, parent)
 
-	for i := 0; i < tCfg.NumField(); i++ {
-		field := tCfg.Field(i)
+	for i := 0; i < targetType.NumField(); i++ {
+		field := targetType.Field(i)
 		fType := field.Type
 
 		fieldName := fullFieldName(nameOfParentType, field.Name)
 		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
 		debug("%s field-type=%s\n", logPrefix, fType)
 
-		// find out if we already have a primitive type
-		isPrimitive, err := isOfPrimitiveType(fType)
+		isPrimitive, eDef, hasConfigTag, err := extractConfigTagFromStructField(field, nameOfParentType, parent)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
+			return nil, errors.Wrap(err, "Extracting config tag")
 		}
 
-		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
-		// skip all fields without the cfg tag
-		if !hasCfgTag {
-			debug("%s no tag found entry will be skipped\n", logPrefix)
+		// skip the field in case there is no config tag
+		if !hasConfigTag {
+			debug("%s no tag found entry will be skipped.\n", logPrefix)
 			continue
 		}
-		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseConfigTag(cfgSetting, fType, parent.Name)
-		if err != nil {
-			return nil, errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
-		}
-		debug("%s parsed config entry=%v\n", logPrefix, eDef)
+		debug("%s parsed config entry=%v. Is primitive=%t.\n", logPrefix, eDef, isPrimitive)
 
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
 		if !isPrimitive {
 			subEntries, err := extractConfigTags(fType, fieldName, eDef)
 			if err != nil {
 				return nil, errors.Wrap(err, "Extracting subentries")
 			}
 			entries = append(entries, subEntries...)
-			debug("%s added entries %v\n", logPrefix, entries)
+			debug("%s added configTags. Result: %v.\n", logPrefix, entries)
 			continue
 		}
 
 		entries = append(entries, eDef)
-		debug("%s created new entry=%v\n", logPrefix, eDef)
+		debug("%s added configTag entry=%v.\n", logPrefix, eDef)
 	}
 	return entries, nil
 }
