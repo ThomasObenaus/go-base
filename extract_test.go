@@ -311,3 +311,31 @@ func Test_processAllConfigTagsOfStruct_Fail(t *testing.T) {
 	require.Error(t, errNil)
 	require.Error(t, errFailHandler)
 }
+
+func Test_extractConfigTagsOfStruct(t *testing.T) {
+	// GIVEN
+	type nestedAgain struct {
+		FieldI  string `cfg:"{'name':'field-i','desc':'a string field','default':'field-i default'}"`
+		FieldII string `cfg:"{'name':'field-ii','desc':'a nested field','default':'field-ii default'}"`
+	}
+
+	type nested struct {
+		FieldA string      `cfg:"{'name':'field-a','desc':'a string field','default':'field-a default'}"`
+		FieldB nestedAgain `cfg:"{'name':'field-b','desc':'a nested field','default':{'field-i':'field-i value','field-ii':'field-ii value'}}"`
+	}
+
+	type my struct {
+		NoConfigTag string
+		Field1      string   `cfg:"{'name':'field-1','desc':'a string field','default':'field-1 default'}"`
+		Field3      nested   `cfg:"{'name':'field-3','desc':'a nested field'}"`
+		Field4      []nested `cfg:"{'name':'field-4','desc':'a list of nested field','default':[{'field-a':'field-a value','field-b':{}}]}"`
+	}
+	strct := my{}
+
+	// WHEN
+	cfgTags, errNoPointer := extractConfigTagsOfStruct(&strct, "", configTag{})
+
+	// THEN
+	require.NoError(t, errNoPointer)
+	require.Len(t, cfgTags, 5)
+}
