@@ -102,6 +102,10 @@ func getConfigTagDefinition(fieldDeclaration reflect.StructField) (string, bool)
 // the data map should contain an entry with name 'field_1'
 // 	data := map[string]interface{}{"field_1":"a value"}
 func createAndFillStruct(targetTypeOfStruct reflect.Type, data map[string]interface{}) (reflect.Value, error) {
+	if targetTypeOfStruct.Kind() != reflect.Struct {
+		return reflect.Zero(targetTypeOfStruct), fmt.Errorf("The target type must be a struct")
+	}
+
 	newStruct := reflect.New(targetTypeOfStruct)
 	newStructValue := newStruct.Elem()
 
@@ -129,7 +133,11 @@ func createAndFillStruct(targetTypeOfStruct reflect.Type, data map[string]interf
 		}
 
 		// cast the parsed default value to the target type
-		castedToTargetType := reflect.ValueOf(val).Convert(fieldType)
+		castedToTargetTypeIf, err := castToTargetType(val, fieldType)
+		if err != nil {
+			return reflect.Zero(targetTypeOfStruct), errors.Wrapf(err, "Casting to target type")
+		}
+		castedToTargetType := reflect.ValueOf(castedToTargetTypeIf)
 
 		// ensure that the casted value can be set
 		if !isFieldExported(fieldDeclaration) {

@@ -102,7 +102,6 @@ func extractConfigTagsOfStruct(target interface{}, nameOfParentField string, par
 
 	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentField, targetType, parent)
 
-	// TODO: move to function factory
 	err := processAllConfigTagsOfStruct(target, nameOfParentField, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
 

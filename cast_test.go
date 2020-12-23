@@ -40,6 +40,12 @@ func Test_createAndFillStruct_Fail(t *testing.T) {
 
 	// THEN
 	assert.Error(t, errUnexportedField)
+
+	// WHEN
+	_, errNoStruct := createAndFillStruct(reflect.TypeOf(int(0)), map[string]interface{}{})
+
+	// THEN
+	assert.Error(t, errNoStruct)
 }
 
 func Test_createAndFillStruct(t *testing.T) {
@@ -59,7 +65,9 @@ func Test_createAndFillStruct(t *testing.T) {
 
 	data := map[string]interface{}{
 		"field_1": expected.Field1,
-		"field_2": expected.Field2,
+		"field_2": map[string]interface{}{
+			"field_a": expected.Field2.FieldA,
+		},
 	}
 
 	// WHEN
@@ -175,11 +183,16 @@ func Test_castToStruct(t *testing.T) {
 	vStruct := map[string]interface{}{
 		"field_1": expected.Field1,
 		"field_2": expected.Field2,
-		"field_3": nested{
-			FieldA: expected.Field3.FieldA,
+		"field_3": map[string]interface{}{
+			"field_a": expected.Field3.FieldA,
 		},
-		"field_4": expected.Field4,
-		"field_5": expected.Field5,
+		"field_4": []interface{}{
+			expected.Field4[0],
+			expected.Field4[1],
+		},
+		"field_5": []interface{}{
+			map[string]interface{}{"field_a": expected.Field5[0].FieldA},
+		},
 	}
 
 	// WHEN
