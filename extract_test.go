@@ -180,7 +180,7 @@ func Test_parseConfigTagDefinition_Required(t *testing.T) {
 	assert.True(t, tag.IsRequired())
 }
 
-func Test_extractConfigTags_Primitives(t *testing.T) {
+func Test_extractConfigTagsOfStruct_Primitives(t *testing.T) {
 
 	// GIVEN
 	type primitives struct {
@@ -193,7 +193,7 @@ func Test_extractConfigTags_Primitives(t *testing.T) {
 	prims := primitives{}
 
 	// WHEN
-	entries, err := extractConfigTags(&prims, "", configTag{})
+	entries, err := extractConfigTagsOfStruct(&prims, "", configTag{})
 
 	// THEN
 	assert.NoError(t, err)
@@ -223,7 +223,7 @@ func Test_extractConfigTags_Primitives(t *testing.T) {
 	assert.False(t, entries[3].IsRequired())
 }
 
-func Test_extractConfigTags_Required(t *testing.T) {
+func Test_extractConfigTagsOfStruct_Required(t *testing.T) {
 
 	// GIVEN
 	type primitives struct {
@@ -233,7 +233,7 @@ func Test_extractConfigTags_Required(t *testing.T) {
 	prims := primitives{}
 
 	// WHEN
-	entries, err := extractConfigTags(&prims, "", configTag{})
+	entries, err := extractConfigTagsOfStruct(&prims, "", configTag{})
 
 	// THEN
 	assert.NoError(t, err)

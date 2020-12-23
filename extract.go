@@ -88,13 +88,13 @@ func extractConfigTagFromStructField(field reflect.StructField, parent configTag
 	return isPrimitive, &cfgTag, nil
 }
 
-// extractConfigTags extracts recursively all configTags from the given struct.
+// extractConfigTagsOfStruct extracts recursively all configTags from the given struct.
 // Fields of the target struct that are not annotated with a configTag are ignored.
 //
 // target - the target that should be processed (has to be a pointer to a struct)
 // nameOfParentField - the name of the targets parent field. This is needed since this function runs recursively through the given target struct.
 // parent - the configTag of the targets parent field. This is needed since this function runs recursively through the given target struct.
-func extractConfigTags(target interface{}, nameOfParentField string, parent configTag) ([]configTag, error) {
+func extractConfigTagsOfStruct(target interface{}, nameOfParentField string, parent configTag) ([]configTag, error) {
 
 	entries := make([]configTag, 0)
 
@@ -108,12 +108,12 @@ func extractConfigTags(target interface{}, nameOfParentField string, parent conf
 
 		if !isPrimitive {
 			fieldValueIf := fieldValue.Addr().Interface()
-			subEntries, err := extractConfigTags(fieldValueIf, fieldName, cfgTag)
+			subEntries, err := extractConfigTagsOfStruct(fieldValueIf, fieldName, cfgTag)
 			if err != nil {
 				return errors.Wrap(err, "Extracting subentries")
 			}
 			entries = append(entries, subEntries...)
-			debug("%s added configTags. Result: %v.\n", logPrefix, entries)
+			debug("%s added %d configTags.\n", logPrefix, len(entries))
 			return nil
 		}
 
