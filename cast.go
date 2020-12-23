@@ -86,7 +86,7 @@ func castToTargetType(rawUntypedValue interface{}, targetType reflect.Type) (int
 	}
 }
 
-func getConfigTagDeclaration(fieldDeclaration reflect.StructField) (string, bool) {
+func getConfigTagDefinition(fieldDeclaration reflect.StructField) (string, bool) {
 	return fieldDeclaration.Tag.Lookup("cfg")
 }
 
@@ -109,12 +109,12 @@ func createAndFillStruct(targetTypeOfStruct reflect.Type, data map[string]interf
 		fieldDeclaration := targetTypeOfStruct.Field(i)
 		fieldValue := newStructValue.FieldByName(fieldDeclaration.Name)
 		fieldType := fieldDeclaration.Type
-		configTag, hasConfig := getConfigTagDeclaration(fieldDeclaration)
+		configTag, hasConfig := getConfigTagDefinition(fieldDeclaration)
 		if !hasConfig {
 			continue
 		}
 
-		entry, err := parseConfigTag(configTag, fieldType, "")
+		entry, err := parseConfigTagDefinition(configTag, fieldType, "")
 		if err != nil {
 			return reflect.Zero(targetTypeOfStruct), errors.Wrapf(err, "Parsing configTag '%s'", configTag)
 		}

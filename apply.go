@@ -50,7 +50,7 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 		}
 		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
 
-		cfgSetting, hasCfgTag := getConfigTagDeclaration(field)
+		cfgSetting, hasCfgTag := getConfigTagDefinition(field)
 		// ignore fields without a config tag
 		if !hasCfgTag {
 			debug("%s no tag found entry will be skipped\n", logPrefix)
@@ -58,12 +58,13 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 		}
 		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
 
-		eDef, err := parseConfigTag(cfgSetting, fType, parent.Name)
+		eDef, err := parseConfigTagDefinition(cfgSetting, fType, parent.Name)
 		if err != nil {
 			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
 		}
 		debug("%s parsed config entry=%v\n", logPrefix, eDef)
 
+		// HINT: apply specific code starts here
 		v := targetValue.Field(i)
 		fieldValue := v.Addr().Interface()
 		debug("%s field-type=%s field-value=%v\n", logPrefix, fType, v)

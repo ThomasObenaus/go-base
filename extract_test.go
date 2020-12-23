@@ -13,7 +13,7 @@ type testParseConfigTag struct {
 	nameOfParent string
 }
 
-func Test_parseConfigTag_Fail(t *testing.T) {
+func Test_parseConfigTagDefinition_Fail(t *testing.T) {
 	// GIVEN
 	invalidType1 := "{'name':'string-slice','default':['default1','default2']}"
 	invalidType2 := "{'name':'string-slice','default':['default1','default2']}"
@@ -21,10 +21,10 @@ func Test_parseConfigTag_Fail(t *testing.T) {
 	invalid2 := "just invalid [][}{"
 
 	// WHEN
-	_, errInvalidType1 := parseConfigTag(invalidType1, reflect.TypeOf(int(0)), "")
-	_, errInvalidType2 := parseConfigTag(invalidType2, reflect.TypeOf([]int{}), "")
-	_, errInvalid1 := parseConfigTag(invalid1, reflect.TypeOf([]int{}), "")
-	_, errInvalid2 := parseConfigTag(invalid2, reflect.TypeOf([]int{}), "")
+	_, errInvalidType1 := parseConfigTagDefinition(invalidType1, reflect.TypeOf(int(0)), "")
+	_, errInvalidType2 := parseConfigTagDefinition(invalidType2, reflect.TypeOf([]int{}), "")
+	_, errInvalid1 := parseConfigTagDefinition(invalid1, reflect.TypeOf([]int{}), "")
+	_, errInvalid2 := parseConfigTagDefinition(invalid2, reflect.TypeOf([]int{}), "")
 
 	// THEN
 	assert.Error(t, errInvalidType1)
@@ -33,7 +33,7 @@ func Test_parseConfigTag_Fail(t *testing.T) {
 	assert.Error(t, errInvalid2)
 }
 
-func Test_parseConfigTag_Struct(t *testing.T) {
+func Test_parseConfigTagDefinition_Struct(t *testing.T) {
 	type mystruct struct {
 		Field1 string `cfg:"{'name':'f1','default':'default'}"`
 		Field2 int    `cfg:"{'name':'f2','default':111}"`
@@ -46,7 +46,7 @@ func Test_parseConfigTag_Struct(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tag, err := parseConfigTag(simpleStruct.configTagStr, simpleStruct.typeOfEntry, simpleStruct.nameOfParent)
+	tag, err := parseConfigTagDefinition(simpleStruct.configTagStr, simpleStruct.typeOfEntry, simpleStruct.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, mystruct{Field1: "value1", Field2: 111}, tag.Def)
 	assert.Equal(t, simpleStruct.typeOfEntry, reflect.TypeOf(tag.Def))
@@ -54,7 +54,7 @@ func Test_parseConfigTag_Struct(t *testing.T) {
 	assert.False(t, tag.IsRequired())
 }
 
-func Test_parseConfigTag_Slices(t *testing.T) {
+func Test_parseConfigTagDefinition_Slices(t *testing.T) {
 	// GIVEN
 	stringSlice := testParseConfigTag{
 		configTagStr: "{'name':'string-slice','default':['default1','default2']}",
@@ -62,7 +62,7 @@ func Test_parseConfigTag_Slices(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tag, err := parseConfigTag(stringSlice.configTagStr, stringSlice.typeOfEntry, stringSlice.nameOfParent)
+	tag, err := parseConfigTagDefinition(stringSlice.configTagStr, stringSlice.typeOfEntry, stringSlice.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"default1", "default2"}, tag.Def)
 	assert.Equal(t, stringSlice.typeOfEntry, reflect.TypeOf(tag.Def))
@@ -80,7 +80,7 @@ func Test_parseConfigTag_Slices(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tag, err = parseConfigTag(structSlice.configTagStr, structSlice.typeOfEntry, structSlice.nameOfParent)
+	tag, err = parseConfigTagDefinition(structSlice.configTagStr, structSlice.typeOfEntry, structSlice.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, []mystruct{{Field1: "value1"}, {Field1: "default"}}, tag.Def)
 	assert.Equal(t, structSlice.typeOfEntry, reflect.TypeOf(tag.Def))
@@ -88,7 +88,7 @@ func Test_parseConfigTag_Slices(t *testing.T) {
 	assert.False(t, tag.IsRequired())
 }
 
-func Test_parseConfigTag_Simple(t *testing.T) {
+func Test_parseConfigTagDefinition_Simple(t *testing.T) {
 	// GIVEN
 	simpleString := testParseConfigTag{
 		configTagStr: "{'name':'field-string','desc':'string field','default':'default'}",
@@ -96,7 +96,7 @@ func Test_parseConfigTag_Simple(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tagStr, err := parseConfigTag(simpleString.configTagStr, simpleString.typeOfEntry, simpleString.nameOfParent)
+	tagStr, err := parseConfigTagDefinition(simpleString.configTagStr, simpleString.typeOfEntry, simpleString.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, "field-string", tagStr.Name)
 	assert.Equal(t, "string field", tagStr.Description)
@@ -112,7 +112,7 @@ func Test_parseConfigTag_Simple(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tagInt, err := parseConfigTag(simpleInt.configTagStr, simpleInt.typeOfEntry, simpleInt.nameOfParent)
+	tagInt, err := parseConfigTagDefinition(simpleInt.configTagStr, simpleInt.typeOfEntry, simpleInt.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, "field-int", tagInt.Name)
 	assert.Equal(t, "int field", tagInt.Description)
@@ -128,7 +128,7 @@ func Test_parseConfigTag_Simple(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tagFloat, err := parseConfigTag(simpleFloat.configTagStr, simpleFloat.typeOfEntry, simpleFloat.nameOfParent)
+	tagFloat, err := parseConfigTagDefinition(simpleFloat.configTagStr, simpleFloat.typeOfEntry, simpleFloat.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, "field-float", tagFloat.Name)
 	assert.Equal(t, "float field", tagFloat.Description)
@@ -144,7 +144,7 @@ func Test_parseConfigTag_Simple(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tagBool, err := parseConfigTag(simpleBool.configTagStr, simpleBool.typeOfEntry, simpleBool.nameOfParent)
+	tagBool, err := parseConfigTagDefinition(simpleBool.configTagStr, simpleBool.typeOfEntry, simpleBool.nameOfParent)
 	assert.NoError(t, err)
 	assert.Equal(t, "field-bool", tagBool.Name)
 	assert.Equal(t, "bool field", tagBool.Description)
@@ -154,7 +154,7 @@ func Test_parseConfigTag_Simple(t *testing.T) {
 	assert.False(t, tagBool.IsRequired())
 }
 
-func Test_parseConfigTag_Required(t *testing.T) {
+func Test_parseConfigTagDefinition_Required(t *testing.T) {
 	// GIVEN
 	simpleOptional := testParseConfigTag{
 		configTagStr: "{'name':'field-string','desc':'string field','default':'default'}",
@@ -162,7 +162,7 @@ func Test_parseConfigTag_Required(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tag, err := parseConfigTag(simpleOptional.configTagStr, simpleOptional.typeOfEntry, simpleOptional.nameOfParent)
+	tag, err := parseConfigTagDefinition(simpleOptional.configTagStr, simpleOptional.typeOfEntry, simpleOptional.nameOfParent)
 	assert.NoError(t, err)
 	assert.False(t, tag.IsRequired())
 
@@ -173,7 +173,7 @@ func Test_parseConfigTag_Required(t *testing.T) {
 	}
 
 	// WHEN + THEN
-	tag, err = parseConfigTag(simpleRequired.configTagStr, simpleRequired.typeOfEntry, simpleRequired.nameOfParent)
+	tag, err = parseConfigTagDefinition(simpleRequired.configTagStr, simpleRequired.typeOfEntry, simpleRequired.nameOfParent)
 	assert.NoError(t, err)
 	assert.True(t, tag.IsRequired())
 }
