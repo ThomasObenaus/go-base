@@ -99,8 +99,39 @@ func extractConfigTags(targetType reflect.Type, nameOfParentType string, parent 
 	}
 	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, targetType, parent)
 
+	// TODO: move to function factory
+	targetValue := reflect.Zero(targetType)
+	err := walkOverType(targetType, targetValue, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
+
+		if !isPrimitive {
+			subEntries, err := extractConfigTags(fieldType, fieldName, cfgTag)
+			if err != nil {
+				return errors.Wrap(err, "Extracting subentries")
+			}
+			entries = append(entries, subEntries...)
+			debug("%s added configTags. Result: %v.\n", logPrefix, entries)
+			return nil
+		}
+
+		entries = append(entries, cfgTag)
+		debug("%s added configTag entry=%v.\n", logPrefix, cfgTag)
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "Extracting config tags for %v", targetType)
+	}
+	return entries, nil
+}
+
+type handleConfigTag func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error
+
+func walkOverType(targetType reflect.Type, targetValue reflect.Value, nameOfParentType string, parent configTag, handleCfgTag handleConfigTag) error {
 	for i := 0; i < targetType.NumField(); i++ {
 		field := targetType.Field(i)
+		fieldValue := targetValue.Field(i)
 		fType := field.Type
 
 		fieldName := fullFieldName(nameOfParentType, field.Name)
@@ -109,7 +140,7 @@ func extractConfigTags(targetType reflect.Type, nameOfParentType string, parent 
 
 		isPrimitive, cfgTag, err := extractConfigTagFromStructField(field, parent)
 		if err != nil {
-			return nil, errors.Wrap(err, "Extracting config tag")
+			return errors.Wrap(err, "Extracting config tag")
 		}
 
 		// skip the field in case there is no config tag
@@ -120,21 +151,12 @@ func extractConfigTags(targetType reflect.Type, nameOfParentType string, parent 
 
 		debug("%s parsed config entry=%v. Is primitive=%t.\n", logPrefix, cfgTag, isPrimitive)
 
-		// HINT: extract specific code starts here
-		if !isPrimitive {
-			subEntries, err := extractConfigTags(fType, fieldName, *cfgTag)
-			if err != nil {
-				return nil, errors.Wrap(err, "Extracting subentries")
-			}
-			entries = append(entries, subEntries...)
-			debug("%s added configTags. Result: %v.\n", logPrefix, entries)
-			continue
+		err = handleCfgTag(fieldName, isPrimitive, fType, fieldValue, *cfgTag)
+		if err != nil {
+			return errors.Wrapf(err, "Handling configTag %s for field '%s'", *cfgTag, fieldName)
 		}
-
-		entries = append(entries, *cfgTag)
-		debug("%s added configTag entry=%v.\n", logPrefix, cfgTag)
 	}
-	return entries, nil
+	return nil
 }
 
 // isOfPrimitiveType returns true if the given type is a primitive one (can be easily casted).

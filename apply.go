@@ -35,62 +35,39 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 
 	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, targetType, targetValue)
 
-	for i := 0; i < targetType.NumField(); i++ {
-		field := targetType.Field(i)
-		fType := field.Type
+	// TODO: move to function factory
+	err = walkOverType(targetType, targetValue, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 
-		fieldName := fullFieldName(nameOfParentType, field.Name)
 		logPrefix := fmt.Sprintf("[Apply-(%s)]", fieldName)
-		debug("%s field-type=%s\n", logPrefix, fType)
-
-		// find out if we already have a primitive type
-		isPrimitive, err := isOfPrimitiveType(fType)
-		if err != nil {
-			return errors.Wrapf(err, "Checking for primitive type failed for field '%s'", fieldName)
-		}
-		debug("%s is primitive=%t\n", logPrefix, isPrimitive)
-
-		cfgSetting, hasCfgTag := getConfigTagDefinition(field)
-		// ignore fields without a config tag
-		if !hasCfgTag {
-			debug("%s no tag found entry will be skipped\n", logPrefix)
-			continue
-		}
-		debug("%s tag found cfgSetting=%v\n", logPrefix, cfgSetting)
-
-		eDef, err := parseConfigTagDefinition(cfgSetting, fType, parent.Name)
-		if err != nil {
-			return errors.Wrapf(err, "Parsing the config definition failed for field '%s'", fieldName)
-		}
-		debug("%s parsed config entry=%v\n", logPrefix, eDef)
-
-		// HINT: apply specific code starts here
-		v := targetValue.Field(i)
-		fieldValue := v.Addr().Interface()
-		debug("%s field-type=%s field-value=%v\n", logPrefix, fType, v)
+		debug("%s field-type=%s field-value=%v\n", logPrefix, fieldType, fieldValue)
 
 		// handling of non primitives (stucts)
 		if !isPrimitive {
-			if err := applyConfig(provider, fieldValue, nameOfParentType, eDef); err != nil {
+			fieldValueIf := fieldValue.Addr().Interface()
+			if err := applyConfig(provider, fieldValueIf, nameOfParentType, cfgTag); err != nil {
 				return errors.Wrap(err, "Applying non primitive")
 			}
-			debug("%s applied non primitive %v\n", logPrefix, fieldValue)
-			continue
+			debug("%s applied non primitive %v\n", logPrefix, fieldValueIf)
+			return nil
 		}
 
-		if !provider.IsSet(eDef.Name) {
+		if !provider.IsSet(cfgTag.Name) {
 			debug("%s parameter not provided, nothing will be applied\n", logPrefix)
-			continue
+			return nil
 		}
 
 		// apply the value
-		val := provider.Get(eDef.Name)
+		val := provider.Get(cfgTag.Name)
 		newValue := reflect.ValueOf(val)
 		typeOfValue := reflect.TypeOf(val)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
-		v.Set(newValue)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, eDef.Name)
+		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, cfgTag.Name)
+		fieldValue.Set(newValue)
+		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, cfgTag.Name)
+		return nil
+	})
 
+	if err != nil {
+		return errors.Wrapf(err, "Applying config to %v", targetType)
 	}
 	return nil
 }

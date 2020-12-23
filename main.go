@@ -89,8 +89,8 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
+		"--name=hello",
 		//"--prio=23",
-		//"--name=hello",
 		//"--immutable=true",
 		//"--config-store.file-path=/devops",
 		//"--config-store.target-secret.key=#lsdpo93",
