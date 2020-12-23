@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testParseConfigTag struct {
@@ -188,15 +189,14 @@ func Test_extractConfigTags_Primitives(t *testing.T) {
 		SomeFieldFloat  float64 `cfg:"{'name':'field-float','desc':'a float field','default':22.22}"`
 		SomeFieldBool   bool    `cfg:"{'name':'field-bool','desc':'a bool field','default':true}"`
 	}
-
-	sType := reflect.TypeOf(primitives{})
+	prims := primitives{}
 
 	// WHEN
-	entries, err := extractConfigTags(sType, "", configTag{})
+	entries, err := extractConfigTags(&prims, "", configTag{})
 
 	// THEN
 	assert.NoError(t, err)
-	assert.Len(t, entries, 4)
+	require.Len(t, entries, 4)
 	assert.Equal(t, "field-str", entries[0].Name)
 	assert.Equal(t, "a string field", entries[0].Description)
 	assert.Equal(t, "default value", entries[0].Def)
@@ -229,11 +229,10 @@ func Test_extractConfigTags_Required(t *testing.T) {
 		SomeFielOptional  string `cfg:"{'name':'field-str','desc':'a string field','default':'default value'}"`
 		SomeFieldRequired string `cfg:"{'name':'field-str','desc':'a string field'}"`
 	}
-
-	sType := reflect.TypeOf(primitives{})
+	prims := primitives{}
 
 	// WHEN
-	entries, err := extractConfigTags(sType, "", configTag{})
+	entries, err := extractConfigTags(&prims, "", configTag{})
 
 	// THEN
 	assert.NoError(t, err)

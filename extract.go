@@ -88,24 +88,27 @@ func extractConfigTagFromStructField(field reflect.StructField, parent configTag
 	return isPrimitive, &cfgTag, nil
 }
 
-// extractConfigTags extracts recursively all configTags from the given type.
-func extractConfigTags(targetType reflect.Type, nameOfParentType string, parent configTag) ([]configTag, error) {
+// extractConfigTags extracts recursively all configTags from the given struct.
+// Fields of the target struct that are not annotated with a configTag are ignored.
+//
+// target - the target that should be processed (has to be a pointer to a struct)
+// nameOfParentField - the name of the targets parent field. This is needed since this function runs recursively through the given target struct.
+// parent - the configTag of the targets parent field. This is needed since this function runs recursively through the given target struct.
+func extractConfigTags(target interface{}, nameOfParentField string, parent configTag) ([]configTag, error) {
 
 	entries := make([]configTag, 0)
 
-	// use the element type if we have a pointer
-	if targetType.Kind() == reflect.Ptr {
-		targetType = targetType.Elem()
-	}
-	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentType, targetType, parent)
+	targetType := reflect.TypeOf(target)
+
+	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentField, targetType, parent)
 
 	// TODO: move to function factory
-	targetValue := reflect.Zero(targetType)
-	err := walkOverType(targetType, targetValue, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	err := processAllConfigTagsOfStruct(target, nameOfParentField, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
 
 		if !isPrimitive {
-			subEntries, err := extractConfigTags(fieldType, fieldName, cfgTag)
+			fieldValueIf := fieldValue.Addr().Interface()
+			subEntries, err := extractConfigTags(fieldValueIf, fieldName, cfgTag)
 			if err != nil {
 				return errors.Wrap(err, "Extracting subentries")
 			}
@@ -126,16 +129,30 @@ func extractConfigTags(targetType reflect.Type, nameOfParentType string, parent 
 	return entries, nil
 }
 
-type handleConfigTag func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error
+// handleConfigTagFunc function type for handling an extracted configTag of a given field
+type handleConfigTagFunc func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error
 
-func walkOverType(targetType reflect.Type, targetValue reflect.Value, nameOfParentType string, parent configTag, handleCfgTag handleConfigTag) error {
+// processAllConfigTagsOfStruct finds the configTag on each field of the given struct. Each of this configTags will handled by the given handleConfigTagFunc.
+// Fields of the target struct that are not annotated with a configTag are ignored (handleConfigTagFunc won't be called).
+//
+// target - the target that should be processed (has to be a pointer to a struct)
+// nameOfParentField - the name of the targets parent field. This is needed since this function runs recursively through the given target struct.
+// parent - the configTag of the targets parent field. This is needed since this function runs recursively through the given target struct.
+// handleConfigTagFun - a function that should be used to handle each of the targets struct fields.
+func processAllConfigTagsOfStruct(target interface{}, nameOfParentField string, parent configTag, handleConfigTagFun handleConfigTagFunc) error {
+
+	targetType, targetValue, err := getTargetTypeAndValue(target)
+	if err != nil {
+		return errors.Wrapf(err, "Obtaining target type and -value for target='%v',nameOfParentField='%s',parent='%s'", target, nameOfParentField, parent)
+	}
+
 	for i := 0; i < targetType.NumField(); i++ {
 		field := targetType.Field(i)
 		fieldValue := targetValue.Field(i)
 		fType := field.Type
 
-		fieldName := fullFieldName(nameOfParentType, field.Name)
-		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
+		fieldName := fullFieldName(nameOfParentField, field.Name)
+		logPrefix := fmt.Sprintf("[Process-(%s)]", fieldName)
 		debug("%s field-type=%s\n", logPrefix, fType)
 
 		isPrimitive, cfgTag, err := extractConfigTagFromStructField(field, parent)
@@ -151,7 +168,7 @@ func walkOverType(targetType reflect.Type, targetValue reflect.Value, nameOfPare
 
 		debug("%s parsed config entry=%v. Is primitive=%t.\n", logPrefix, cfgTag, isPrimitive)
 
-		err = handleCfgTag(fieldName, isPrimitive, fType, fieldValue, *cfgTag)
+		err = handleConfigTagFun(fieldName, isPrimitive, fType, fieldValue, *cfgTag)
 		if err != nil {
 			return errors.Wrapf(err, "Handling configTag %s for field '%s'", *cfgTag, fieldName)
 		}

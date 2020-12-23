@@ -352,7 +352,7 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
 
-	configTags, err := extractConfigTags(cfgType, "", configTag{})
+	configTags, err := extractConfigTags(&cfg, "", configTag{})
 	if err != nil {
 		return Cfg{}, errors.Wrapf(err, "Extracting config tags from %v", cfgType)
 	}

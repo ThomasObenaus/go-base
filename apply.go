@@ -13,14 +13,19 @@ func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, err
 	targetValue := reflect.ValueOf(target)
 
 	isNilPtr := targetValue.Kind() == reflect.Ptr && targetValue.IsNil()
-	isNotSupportedField := targetValue.Kind() != reflect.Ptr
-	if isNotSupportedField || isNilPtr {
+	isTypeNotSupported := targetValue.Kind() != reflect.Ptr
+	if isTypeNotSupported {
+		return nil, reflect.Zero(targetType), fmt.Errorf("Can't handle %v (kind=%s,value=%v) (the type has to be a pointer)", targetType, targetType.Kind(), targetValue)
+	}
+	if isNilPtr {
 		return nil, reflect.Zero(targetType), fmt.Errorf("Can't handle %v (kind=%s,value=%v) (probably the type is not supported)", targetType, targetType.Kind(), targetValue)
 	}
 
 	// use the element type since we have a pointer
-	targetType = targetType.Elem()
-	targetValue = targetValue.Elem()
+	if targetType.Kind() == reflect.Ptr {
+		targetType = targetType.Elem()
+		targetValue = targetValue.Elem()
+	}
 
 	return targetType, targetValue, nil
 }
@@ -36,7 +41,7 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, targetType, targetValue)
 
 	// TODO: move to function factory
-	err = walkOverType(targetType, targetValue, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	err = processAllConfigTagsOfStruct(target, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 
 		logPrefix := fmt.Sprintf("[Apply-(%s)]", fieldName)
 		debug("%s field-type=%s field-value=%v\n", logPrefix, fieldType, fieldValue)
