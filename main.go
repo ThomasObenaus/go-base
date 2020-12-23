@@ -65,13 +65,13 @@ type targetSecret struct {
 // if no default value is given then the config field is treated as required
 
 type Cfg struct {
-	ShouldBeSkipped string // this should be ignored since its not annotated
-	Name            string `cfg:"{'name':'name','desc':'the name of the config'}"`
-	//Prio            int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
-	//Immutable       bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
-	//NumericLevels   []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
-	//Levels          []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
-	//ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
+	ShouldBeSkipped string      // this should be ignored since its not annotated
+	Name            string      `cfg:"{'name':'name','desc':'the name of the config'}"`
+	Prio            int         `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	Immutable       bool        `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
+	NumericLevels   []int       `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
+	Levels          []string    `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`
+	ConfigStore     configStore `cfg:"{'name':'config-store','desc':'the config store'}"`
 	//TargetSecrets []targetSecret `cfg:"{'name':'target-secrets','desc':'list of target secrets','default':[{'name':'mysecret','key':'sdlfks','count':231},{'name':'mysecret','key':'sdlfks','count':231}]}"`
 }
 
@@ -91,13 +91,13 @@ func main() {
 
 	args := []string{
 		"--name=hello",
-		//"--prio=23",
-		//"--immutable=true",
-		//"--config-store.file-path=/devops",
-		//"--config-store.target-secret.key=#lsdpo93",
-		//"--config-store.target-secret.name=mysecret",
-		//"--config-store.target-secret.count=2323",
-		//"--numeric-levels=1,2,3",
+		"--prio=23",
+		"--immutable=true",
+		"--config-store.file-path=/devops",
+		"--config-store.target-secret.key=#lsdpo93",
+		"--config-store.target-secret.name=mysecret",
+		"--config-store.target-secret.count=2323",
+		"--numeric-levels=1,2,3",
 		//"--target-secrets=[{'name':'mysecret','key':'sdlfks','count':231}]",
 	}
 
