@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -262,4 +263,51 @@ func Test_isOfPrimitiveType(t *testing.T) {
 	assert.True(t, is4)
 	assert.NoError(t, err5)
 	assert.True(t, is5)
+}
+
+func Test_processAllConfigTagsOfStruct(t *testing.T) {
+	// GIVEN
+	type primitives struct {
+		NoConfigTag       string
+		SomeFielOptional  string `cfg:"{'name':'field-1','desc':'a string field','default':'default value'}"`
+		SomeFieldRequired string `cfg:"{'name':'field-2','desc':'a string field'}"`
+	}
+	prims := primitives{}
+
+	// WHEN
+	obtainedConfigTags := make([]configTag, 0)
+	err := processAllConfigTagsOfStruct(&prims, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+		obtainedConfigTags = append(obtainedConfigTags, cfgTag)
+		return nil
+	})
+
+	// THEN
+	require.NoError(t, err)
+	require.Len(t, obtainedConfigTags, 2)
+	assert.Equal(t, "field-1", obtainedConfigTags[0].Name)
+	assert.Equal(t, "field-2", obtainedConfigTags[1].Name)
+}
+
+func Test_processAllConfigTagsOfStruct_Fail(t *testing.T) {
+	// GIVEN
+	type primitives struct {
+		SomeFieldRequired string `cfg:"{'name':'field-2','desc':'a string field'}"`
+	}
+	prims := primitives{}
+
+	// WHEN
+	errNoPointer := processAllConfigTagsOfStruct(prims, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+		return nil
+	})
+	errNil := processAllConfigTagsOfStruct(nil, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+		return nil
+	})
+	errFailHandler := processAllConfigTagsOfStruct(&prims, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+		return fmt.Errorf("FAILURE")
+	})
+
+	// THEN
+	require.Error(t, errNoPointer)
+	require.Error(t, errNil)
+	require.Error(t, errFailHandler)
 }

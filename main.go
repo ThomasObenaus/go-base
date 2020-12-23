@@ -57,6 +57,7 @@ type targetSecret struct {
 // TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Custom function hooks for complex parsing
 // TODO: Custom logger hook function
+// TODO: Check if pointer fields are supported
 
 // HINT: Desired schema:
 // cfg:"name:<name>;;desc:<description>;;default:<default value>"

@@ -140,6 +140,9 @@ type handleConfigTagFunc func(fieldName string, isPrimitive bool, fieldType refl
 // parent - the configTag of the targets parent field. This is needed since this function runs recursively through the given target struct.
 // handleConfigTagFun - a function that should be used to handle each of the targets struct fields.
 func processAllConfigTagsOfStruct(target interface{}, nameOfParentField string, parent configTag, handleConfigTagFun handleConfigTagFunc) error {
+	if target == nil {
+		return fmt.Errorf("The target must not be nil")
+	}
 
 	targetType, targetValue, err := getTargetTypeAndValue(target)
 	if err != nil {
