@@ -10,6 +10,10 @@ import (
 )
 
 func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, error) {
+	if target == nil {
+		return nil, reflect.Zero(reflect.TypeOf((0))), fmt.Errorf("Can't handle target since it is nil")
+	}
+
 	targetType := reflect.TypeOf(target)
 	targetValue := reflect.ValueOf(target)
 
