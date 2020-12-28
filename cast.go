@@ -43,16 +43,19 @@ func castToSlice(rawValue interface{}, targetType reflect.Type) (interface{}, er
 		return nil, fmt.Errorf("Can't cast to slice since the target type is not a slice. Instead it is %v", targetType)
 	}
 
-	typedDefaultValue, ok := rawValue.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("Types does not match. The target type is a slice (type=%v) but the given default value is no slice (type=%T).", targetType, rawValue)
+	typeOfRawValue := reflect.TypeOf(rawValue)
+	if typeOfRawValue.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("Can't cast to slice since the given raw value is no slice. Instead it is %v", typeOfRawValue)
 	}
+
+	sliceValue := reflect.ValueOf(rawValue)
 
 	// obtain the type of the slices elements
 	elementType := targetType.Elem()
-	sliceInTargetType := reflect.MakeSlice(targetType, 0, len(typedDefaultValue))
+	sliceInTargetType := reflect.MakeSlice(targetType, 0, sliceValue.Len())
 
-	for _, rawDefaultValueElement := range typedDefaultValue {
+	for i := 0; i < sliceValue.Len(); i++ {
+		rawDefaultValueElement := sliceValue.Index(i).Interface()
 		switch castedRawElement := rawDefaultValueElement.(type) {
 		case map[string]interface{}:
 			// handles structs
