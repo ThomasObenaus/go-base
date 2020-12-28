@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -143,33 +142,11 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		}
 
 		// this part supports slices of custom structs and registers the according flag for it
-		sliceOfDefaultValue := reflect.MakeSlice(typeOfDefaultValue, 0, 0)
-		s := sliceOfMapStringToInterfaceFlag{
-			data: sliceOfDefaultValue.Interface(),
-		}
+		s := sliceOfMapStringToInterfaceFlag{}
 		flagSet.VarP(&s, entry.name, entry.flagShortName, entry.usage)
 		return nil
 	}
 
-	return nil
-}
-
-type sliceOfMapStringToInterfaceFlag struct {
-	data interface{}
-}
-
-func (l *sliceOfMapStringToInterfaceFlag) String() string {
-	return fmt.Sprintf("%v", l.data)
-}
-func (l *sliceOfMapStringToInterfaceFlag) Type() string {
-	return "[]map[string]interface{}"
-}
-
-func (l *sliceOfMapStringToInterfaceFlag) Set(in string) error {
-	in = strings.ReplaceAll(in, "'", "\"")
-	if err := json.Unmarshal([]byte(in), &l.data); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -197,4 +174,27 @@ func registerEnv(vp *viper.Viper, envPrefix string, entry Entry) error {
 		vp.SetEnvPrefix(envPrefix)
 	}
 	return vp.BindEnv(entry.name)
+}
+
+// sliceOfMapStringToInterfaceFlag is a struct that can be used to represent a flag of type
+//	[]map[string]interface{}
+// That is a slice of arbitrary structs.
+type sliceOfMapStringToInterfaceFlag struct {
+	// used to be returned in the String method. Its better to return the value as
+	// json string since this can be parsed easier if needed.
+	jsonSting string
+}
+
+func (l *sliceOfMapStringToInterfaceFlag) String() string {
+	return l.jsonSting
+}
+
+func (l *sliceOfMapStringToInterfaceFlag) Type() string {
+	return "[]map[string]interface{}"
+}
+
+func (l *sliceOfMapStringToInterfaceFlag) Set(in string) error {
+	in = strings.ReplaceAll(in, "'", "\"")
+	l.jsonSting = in
+	return nil
 }

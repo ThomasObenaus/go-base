@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
@@ -160,4 +161,17 @@ func fullFieldName(nameOfParent string, fieldName string) string {
 		return fieldName
 	}
 	return fmt.Sprintf("%s.%s", nameOfParent, fieldName)
+}
+
+// parseStringContainingSliceOfMaps can be used to parse a json string that represents an array of structs.
+//
+// e.g.:
+// 	v1 := `[{"name":"name1","key":"key1","count":1},{"name":"name2","key":"key2","count":2}]`
+func parseStringContainingSliceOfMaps(mapString string) ([]map[string]interface{}, error) {
+	maps := []map[string]interface{}{}
+	err := json.Unmarshal([]byte(mapString), &maps)
+	if err != nil {
+		return nil, errors.Wrap(err, "Parsing string that contains a slice of maps")
+	}
+	return maps, nil
 }

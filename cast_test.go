@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_createAndFillStruct_Fail(t *testing.T) {
@@ -243,4 +244,37 @@ func Test_fullFieldName(t *testing.T) {
 	assert.Equal(t, "root", fullFieldName("", "root"))
 	assert.Equal(t, "root.child", fullFieldName("root", "child"))
 	assert.Equal(t, "root.children.child", fullFieldName("root.children", "child"))
+}
+
+func Test_parseStringContainingSliceOfMaps(t *testing.T) {
+	v1 := `[{"name":"name1","key":"key1","count":1},{"name":"name2","key":"key2","count":2}]`
+	v2 := `[]`
+	v3 := `invalid`
+	v4 := `{}`
+	v5 := `[1 2 3 4]`
+
+	// WHEN
+	r1, err1 := parseStringContainingSliceOfMaps(v1)
+	r2, err2 := parseStringContainingSliceOfMaps(v2)
+	r3, err3 := parseStringContainingSliceOfMaps(v3)
+	r4, err4 := parseStringContainingSliceOfMaps(v4)
+	r5, err5 := parseStringContainingSliceOfMaps(v5)
+
+	// THEN
+	require.NoError(t, err1)
+	require.Len(t, r1, 2)
+	assert.Equal(t, "name1", r1[0]["name"])
+	assert.Equal(t, "key1", r1[0]["key"])
+	assert.Equal(t, float64(1), r1[0]["count"])
+	assert.Equal(t, "name2", r1[1]["name"])
+	assert.Equal(t, "key2", r1[1]["key"])
+	assert.Equal(t, float64(2), r1[1]["count"])
+	require.NoError(t, err2)
+	assert.Empty(t, r2)
+	assert.Error(t, err3)
+	assert.Empty(t, r3)
+	assert.Error(t, err4)
+	assert.Empty(t, r4)
+	assert.Error(t, err5)
+	assert.Empty(t, r5)
 }
