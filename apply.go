@@ -6,6 +6,7 @@ import (
 
 	"github.com/ThomasObenaus/go-base/config"
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 )
 
 func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, error) {
@@ -61,13 +62,38 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 			return nil
 		}
 
+		if !fieldValue.CanSet() {
+			return fmt.Errorf("Can't set value to field (fieldName=%s,fieldType=%v,fieldValue=%s)", fieldName, fieldType, fieldValue)
+		}
+
 		// apply the value
 		val := provider.Get(cfgTag.Name)
-		newValue := reflect.ValueOf(val)
-		typeOfValue := reflect.TypeOf(val)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, cfgTag.Name)
-		fieldValue.Set(newValue)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, newValue, typeOfValue, fieldName, cfgTag.Name)
+		typeOfValueFromConfig := reflect.TypeOf(val)
+
+		// Special treatment for slices of structs. This is needed since flag can't handle them instead the value is encodes in a string.
+		if typeOfValueFromConfig.Kind() == reflect.String && fieldType.Kind() == reflect.Slice && fieldType.Elem().Kind() == reflect.Struct {
+
+			sliceOfMapsAsString, err := cast.ToStringE(val)
+			if err != nil {
+				return errors.Wrapf(err, "Casting %v (type=%T) to string", val, val)
+			}
+
+			sliceOfMaps, err := parseStringContainingSliceOfMaps(sliceOfMapsAsString)
+			if err != nil {
+				return errors.Wrapf(err, "Parsing %v (type=%T) to []map[string]interface{}", val, val)
+			}
+			val = sliceOfMaps
+		}
+
+		// cast the parsed default value to the target type
+		castedToTargetTypeIf, err := castToTargetType(val, fieldType)
+		if err != nil {
+			return errors.Wrapf(err, "Casting to target type")
+		}
+		castedToTargetType := reflect.ValueOf(castedToTargetTypeIf)
+
+		fieldValue.Set(castedToTargetType)
+		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, val, fieldType, fieldName, cfgTag.Name)
 		return nil
 	})
 
