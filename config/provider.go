@@ -2,13 +2,38 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
-// Provider is a structure containing the parsed configuration
-type Provider struct {
+type Provider interface {
+	ReadConfig(args []string) error
+	Get(key string) interface{}
+	GetString(key string) string
+	GetBool(key string) bool
+	GetInt(key string) int
+	GetInt32(key string) int32
+	GetInt64(key string) int64
+	GetUint(key string) uint
+	GetUint32(key string) uint32
+	GetUint64(key string) uint64
+	GetFloat64(key string) float64
+	GetTime(key string) time.Time
+	GetDuration(key string) time.Duration
+	GetIntSlice(key string) []int
+	GetStringSlice(key string) []string
+	GetStringMap(key string) map[string]interface{}
+	GetStringMapString(key string) map[string]string
+	GetStringMapStringSlice(key string) map[string][]string
+	GetSizeInBytes(key string) uint
+	IsSet(key string) bool
+	String() string
+}
+
+// providerImpl is a structure containing the parsed configuration
+type providerImpl struct {
 	// config entries are all definitions of config entries that should be regarded
 	configEntries []Entry
 
@@ -30,11 +55,11 @@ type Provider struct {
 }
 
 // ProviderOption represents an option for the Provider
-type ProviderOption func(p *Provider)
+type ProviderOption func(p *providerImpl)
 
 // CfgFile specifies a default value
 func CfgFile(parameterName, shortParameterName string) ProviderOption {
-	return func(p *Provider) {
+	return func(p *providerImpl) {
 		p.configFileEntry = NewEntry(parameterName, "Specifies the full path and name of the configuration file", ShortName(shortParameterName))
 	}
 }
@@ -44,7 +69,7 @@ func CfgFile(parameterName, shortParameterName string) ProviderOption {
 func NewProvider(configEntries []Entry, configName, envPrefix string, options ...ProviderOption) Provider {
 
 	defaultConfigFileEntry := NewEntry("config-file", "Specifies the full path and name of the configuration file", Bind(true, true))
-	provider := Provider{
+	provider := &providerImpl{
 		configEntries:   configEntries,
 		configName:      configName,
 		envPrefix:       envPrefix,
@@ -55,7 +80,7 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 
 	// apply the options
 	for _, opt := range options {
-		opt(&provider)
+		opt(provider)
 	}
 
 	// Enable casting to type based on given default values
@@ -67,6 +92,6 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 	return provider
 }
 
-func (p Provider) String() string {
+func (p *providerImpl) String() string {
 	return fmt.Sprintf("%s: %v", p.configName, p.AllSettings())
 }

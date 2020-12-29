@@ -13,9 +13,10 @@ func Test_RegisterEnvParams(t *testing.T) {
 	var entries []Entry
 	entries = append(entries, NewEntry("test", "usage"))
 	provider := NewProvider(entries, "configName", "envPrefix")
+	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := provider.registerEnvParams()
+	err := pImpl.registerEnvParams()
 
 	// THEN
 	assert.NoError(t, err)
@@ -27,18 +28,20 @@ func Test_RegisterEnvParamsShouldFail(t *testing.T) {
 	var entries []Entry
 	entries = append(entries, NewEntry("", "usage"))
 	provider := NewProvider(entries, "configName", "envPrefix")
+	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := provider.registerEnvParams()
+	err := pImpl.registerEnvParams()
 
 	// THEN
 	assert.Error(t, err)
 
 	// GIVEN
 	provider = NewProvider(entries, "configName", "envPrefix", CfgFile("", ""))
+	pImpl = toProviderImpl(t, provider)
 
 	// WHEN
-	err = provider.registerEnvParams()
+	err = pImpl.registerEnvParams()
 
 	// THEN
 	assert.Error(t, err)
@@ -52,9 +55,10 @@ func Test_RegisterAndParseFlags(t *testing.T) {
 	entries = append(entries, NewEntry("test2", "usage"))
 	provider := NewProvider(entries, "configName", "envPrefix")
 	args := []string{"--test1=A"}
+	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := provider.registerAndParseFlags(args)
+	err := pImpl.registerAndParseFlags(args)
 
 	// THEN
 	assert.NoError(t, err)
@@ -69,9 +73,10 @@ func Test_RegisterAndParseFlags_ShouldFail(t *testing.T) {
 	entries = append(entries, NewEntry("test1", "usage"))
 	provider := NewProvider(entries, "configName", "envPrefix")
 	args := []string{"--unkown-param=A"}
+	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := provider.registerAndParseFlags(args)
+	err := pImpl.registerAndParseFlags(args)
 
 	// THEN
 	assert.Error(t, err)
@@ -80,10 +85,11 @@ func Test_RegisterAndParseFlags_ShouldFail(t *testing.T) {
 	// GIVEN - invalid entry
 	entries = append(entries, NewEntry("", "usage"))
 	provider = NewProvider(entries, "configName", "envPrefix")
+	pImpl = toProviderImpl(t, provider)
 	args = []string{}
 
 	// WHEN
-	err = provider.registerAndParseFlags(args)
+	err = pImpl.registerAndParseFlags(args)
 
 	// THEN
 	assert.Error(t, err)
@@ -97,9 +103,10 @@ func Test_SetDefaults(t *testing.T) {
 	entries = append(entries, NewEntry("test1", "usage", Default("2h")))
 	entries = append(entries, NewEntry("test2", "usage"))
 	provider := NewProvider(entries, "configName", "envPrefix")
+	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := provider.setDefaults()
+	err := pImpl.setDefaults()
 
 	// THEN
 	assert.NoError(t, err)

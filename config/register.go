@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func (p *Provider) registerEnvParams() error {
+func (p *providerImpl) registerEnvParams() error {
 	replacer := strings.NewReplacer("-", "_", ".", "_")
 	p.Viper.SetEnvKeyReplacer(replacer)
 
@@ -25,7 +25,7 @@ func (p *Provider) registerEnvParams() error {
 	return nil
 }
 
-func (p *Provider) registerAndParseFlags(args []string) error {
+func (p *providerImpl) registerAndParseFlags(args []string) error {
 
 	// register also the config file parameter
 	if err := registerFlag(p.pFlagSet, p.configFileEntry); err != nil {
@@ -50,7 +50,7 @@ func (p *Provider) registerAndParseFlags(args []string) error {
 	return nil
 }
 
-func (p *Provider) setDefaults() error {
+func (p *providerImpl) setDefaults() error {
 
 	// regard also the config file parameter
 	if err := setDefault(p.Viper, p.configFileEntry); err != nil {

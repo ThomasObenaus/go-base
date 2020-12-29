@@ -16,13 +16,14 @@ func Test_ReadCfgFile(t *testing.T) {
 	provider := NewProvider(entries, "configName", "envPrefix")
 
 	// WHEN
-	err := provider.readCfgFile(configFilename)
+	pImpl := toProviderImpl(t, provider)
+	err := pImpl.readCfgFile(configFilename)
 
 	// THEN
 	assert.NoError(t, err)
 	assert.Equal(t, "A", provider.GetString("test1"))
 	assert.False(t, provider.IsSet("test2"))
-	assert.Equal(t, configFilename, provider.Viper.ConfigFileUsed())
+	assert.Equal(t, configFilename, pImpl.Viper.ConfigFileUsed())
 }
 
 func Test_ReadCfgFile_AllowNoCfgFile(t *testing.T) {
@@ -34,12 +35,13 @@ func Test_ReadCfgFile_AllowNoCfgFile(t *testing.T) {
 	provider := NewProvider(entries, "configName", "envPrefix")
 
 	// WHEN
-	err := provider.readCfgFile(configFilename)
+	pImpl := toProviderImpl(t, provider)
+	err := pImpl.readCfgFile(configFilename)
 
 	// THEN
 	assert.NoError(t, err)
 	assert.False(t, provider.IsSet("test1"))
-	assert.Empty(t, provider.Viper.ConfigFileUsed())
+	assert.Empty(t, pImpl.Viper.ConfigFileUsed())
 }
 
 func Test_ReadCfgFile_ShouldFail(t *testing.T) {
@@ -51,12 +53,13 @@ func Test_ReadCfgFile_ShouldFail(t *testing.T) {
 	provider := NewProvider(entries, "configName", "envPrefix")
 
 	// WHEN
-	err := provider.readCfgFile(configFilename)
+	pImpl := toProviderImpl(t, provider)
+	err := pImpl.readCfgFile(configFilename)
 
 	// THEN
 	assert.Error(t, err)
 	assert.False(t, provider.IsSet("test1"))
-	assert.Equal(t, configFilename, provider.Viper.ConfigFileUsed())
+	assert.Equal(t, configFilename, pImpl.Viper.ConfigFileUsed())
 }
 
 func Test_ReadConfig_ShouldFail(t *testing.T) {
@@ -64,8 +67,9 @@ func Test_ReadConfig_ShouldFail(t *testing.T) {
 	// GIVEN
 	var entries []Entry
 	provider := NewProvider(entries, "configName", "envPrefix")
+	pImpl := toProviderImpl(t, provider)
 	args := []string{}
-	provider.Viper = nil
+	pImpl.Viper = nil
 
 	// WHEN
 	err := provider.ReadConfig(args)
@@ -75,7 +79,8 @@ func Test_ReadConfig_ShouldFail(t *testing.T) {
 
 	// GIVEN
 	provider = NewProvider(entries, "configName", "envPrefix")
-	provider.pFlagSet = nil
+	pImpl = toProviderImpl(t, provider)
+	pImpl.pFlagSet = nil
 
 	// WHEN
 	err = provider.ReadConfig(args)

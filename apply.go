@@ -45,7 +45,6 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 
 	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, targetType, targetValue)
 
-	// TODO: move to function factory
 	err = processAllConfigTagsOfStruct(target, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 
 		logPrefix := fmt.Sprintf("[Apply-(%s)]", fieldName)
@@ -70,7 +69,6 @@ func applyConfig(provider config.Provider, target interface{}, nameOfParentType 
 			return fmt.Errorf("Can't set value to field (fieldName=%s,fieldType=%v,fieldValue=%s)", fieldName, fieldType, fieldValue)
 		}
 
-		// apply the value
 		val := provider.Get(cfgTag.Name)
 		typeOfValueFromConfig := reflect.TypeOf(val)
 

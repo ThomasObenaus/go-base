@@ -5,7 +5,16 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func toProviderImpl(t *testing.T, pIf Provider) *providerImpl {
+	p, ok := pIf.(*providerImpl)
+	require.True(t, ok)
+	require.NotNil(t, p)
+
+	return p
+}
 
 func Test_NewProvider(t *testing.T) {
 
@@ -20,13 +29,14 @@ func Test_NewProvider(t *testing.T) {
 	err := provider.ReadConfig(args)
 
 	// THEN
-	assert.NotNil(t, provider.pFlagSet)
-	assert.NotNil(t, provider.Viper)
-	assert.Equal(t, envPrefix, provider.envPrefix)
+	pImpl := toProviderImpl(t, provider)
+	assert.NotNil(t, pImpl.pFlagSet)
+	assert.NotNil(t, pImpl.Viper)
+	assert.Equal(t, envPrefix, pImpl.envPrefix)
 	assert.NoError(t, err)
-	assert.Len(t, provider.AllKeys(), 1)
-	assert.Equal(t, "config-file", provider.configFileEntry.name)
-	assert.Empty(t, provider.configFileEntry.flagShortName)
+	assert.Len(t, pImpl.AllKeys(), 1)
+	assert.Equal(t, "config-file", pImpl.configFileEntry.name)
+	assert.Empty(t, pImpl.configFileEntry.flagShortName)
 }
 
 func Test_NewProviderOverrideCfgFile(t *testing.T) {
@@ -40,11 +50,12 @@ func Test_NewProviderOverrideCfgFile(t *testing.T) {
 	provider := NewProvider(configEntries, configName, envPrefix, CfgFile("cfg-f", "f"))
 
 	// THEN
-	assert.NotNil(t, provider.pFlagSet)
-	assert.NotNil(t, provider.Viper)
-	assert.Equal(t, envPrefix, provider.envPrefix)
-	assert.Equal(t, "cfg-f", provider.configFileEntry.name)
-	assert.Equal(t, "f", provider.configFileEntry.flagShortName)
+	pImpl := toProviderImpl(t, provider)
+	assert.NotNil(t, pImpl.pFlagSet)
+	assert.NotNil(t, pImpl.Viper)
+	assert.Equal(t, envPrefix, pImpl.envPrefix)
+	assert.Equal(t, "cfg-f", pImpl.configFileEntry.name)
+	assert.Equal(t, "f", pImpl.configFileEntry.flagShortName)
 }
 
 func ExampleNewProvider() {

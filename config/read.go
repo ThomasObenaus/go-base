@@ -3,7 +3,7 @@ package config
 import "fmt"
 
 // ReadConfig parses commandline arguments, reads parameters from config and from environment
-func (p *Provider) ReadConfig(args []string) error {
+func (p *providerImpl) ReadConfig(args []string) error {
 
 	if p.pFlagSet == nil {
 		return fmt.Errorf("Pflag is nil")
@@ -34,7 +34,7 @@ func (p *Provider) ReadConfig(args []string) error {
 	return nil
 }
 
-func (p *Provider) readCfgFile(cfgFileName string) error {
+func (p *providerImpl) readCfgFile(cfgFileName string) error {
 	if len(cfgFileName) == 0 {
 		return nil
 	}
