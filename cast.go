@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -168,6 +169,7 @@ func fullFieldName(nameOfParent string, fieldName string) string {
 // e.g.:
 // 	v1 := `[{"name":"name1","key":"key1","count":1},{"name":"name2","key":"key2","count":2}]`
 func parseStringContainingSliceOfMaps(mapString string) ([]map[string]interface{}, error) {
+	mapString = strings.ReplaceAll(mapString, "'", `"`)
 	maps := []map[string]interface{}{}
 	err := json.Unmarshal([]byte(mapString), &maps)
 	if err != nil {

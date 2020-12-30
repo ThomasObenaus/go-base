@@ -21,7 +21,7 @@ type configTag struct {
 }
 
 func (e configTag) String() string {
-	return fmt.Sprintf(`name:"%s",desc:"%s",default:%v (%T)`, e.Name, e.Description, e.Def, e.Def)
+	return fmt.Sprintf(`name:"%s",desc:"%s",default:%v (%T),required=%t`, e.Name, e.Description, e.Def, e.Def, e.IsRequired())
 }
 
 func (e configTag) IsRequired() bool {
