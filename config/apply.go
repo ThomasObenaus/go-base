@@ -1,13 +1,21 @@
-package main
+package config
 
 import (
 	"fmt"
 	"reflect"
 
-	"github.com/ThomasObenaus/go-base/config"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 )
+
+var verbose = true
+
+func debug(format string, a ...interface{}) {
+	if verbose {
+		fmt.Print("[DBG]")
+		fmt.Printf(format, a...)
+	}
+}
 
 func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, error) {
 	if target == nil {
@@ -35,8 +43,13 @@ func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, err
 	return targetType, targetValue, nil
 }
 
+// TODO: REMOVE
+func Apply(provider Provider, target interface{}) error {
+	return applyConfig(provider, target, "", configTag{})
+}
+
 // applyConfig applies the config that is stored in the given provider. The config will be used to fill the given target type.
-func applyConfig(provider config.Provider, target interface{}, nameOfParentType string, parent configTag) error {
+func applyConfig(provider Provider, target interface{}, nameOfParentType string, parent configTag) error {
 
 	targetType, targetValue, err := getTargetTypeAndValue(target)
 	if err != nil {

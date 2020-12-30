@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"encoding/json"
@@ -86,6 +86,25 @@ func extractConfigTagFromStructField(field reflect.StructField, parent configTag
 	}
 
 	return isPrimitive, &cfgTag, nil
+}
+
+// TODO: REMOVE
+func Extract(target interface{}) ([]Entry, error) {
+
+	entries := make([]Entry, 0)
+
+	configTags, err := extractConfigTagsOfStruct(target, "", configTag{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "Extracting config tags from %v", target)
+	}
+	for _, configTag := range configTags {
+		// create and append the new config entry
+		entry := NewEntry(configTag.Name, configTag.Description, Default(configTag.Def))
+		entries = append(entries, entry)
+		debug("Added new config new entry=%v\n", entry)
+	}
+
+	return entries, nil
 }
 
 // extractConfigTagsOfStruct extracts recursively all configTags from the given struct.

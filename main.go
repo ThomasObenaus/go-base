@@ -110,16 +110,7 @@ func main() {
 }
 
 func unmarshal(provider config.Provider, target interface{}) error {
-	return applyConfig(provider, target, "", configTag{})
-}
-
-var verbose = true
-
-func debug(format string, a ...interface{}) {
-	if verbose {
-		fmt.Print("[DBG]")
-		fmt.Printf(format, a...)
-	}
+	return config.Apply(provider, target)
 }
 
 func isSliceOfStructs(t reflect.Type) bool {
@@ -202,7 +193,6 @@ func setValueFromString(v reflect.Value, strVal string) error {
 // The parameter elementType is used as the target type of the slice to be generated.
 // Only primitive types are supported.
 func strToValueSlice(elementType reflect.Type, strVal string) (reflect.Value, error) {
-	debug("strToValueSlice(%v,'%s')\n", elementType, strVal)
 
 	splittedValues := strings.Split(strVal, ",")
 	numSplittedValues := len(splittedValues)
@@ -352,16 +342,11 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 	cfgType := reflect.TypeOf(cfg)
 
-	configTags, err := extractConfigTagsOfStruct(&cfg, "", configTag{})
+	extractedConfigEntries, err := config.Extract(&cfg)
 	if err != nil {
 		return Cfg{}, errors.Wrapf(err, "Extracting config tags from %v", cfgType)
 	}
-	for _, configTag := range configTags {
-		// create and append the new config entry
-		entry := config.NewEntry(configTag.Name, configTag.Description, config.Default(configTag.Def))
-		configEntries = append(configEntries, entry)
-		debug("Added new config new entry=%v\n", entry)
-	}
+	configEntries = append(configEntries, extractedConfigEntries...)
 
 	provider := config.NewProvider(configEntries, serviceAbbreviation, serviceAbbreviation)
 	err = provider.ReadConfig(args)
