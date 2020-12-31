@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_ReadCfgFile(t *testing.T) {
@@ -13,11 +14,12 @@ func Test_ReadCfgFile(t *testing.T) {
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage"))
 	entries = append(entries, NewEntry("test2", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 
 	// WHEN
 	pImpl := toProviderImpl(t, provider)
-	err := pImpl.readCfgFile(configFilename)
+	err = pImpl.readCfgFile(configFilename)
 
 	// THEN
 	assert.NoError(t, err)
@@ -32,11 +34,12 @@ func Test_ReadCfgFile_AllowNoCfgFile(t *testing.T) {
 	configFilename := ""
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 
 	// WHEN
 	pImpl := toProviderImpl(t, provider)
-	err := pImpl.readCfgFile(configFilename)
+	err = pImpl.readCfgFile(configFilename)
 
 	// THEN
 	assert.NoError(t, err)
@@ -50,11 +53,12 @@ func Test_ReadCfgFile_ShouldFail(t *testing.T) {
 	configFilename := "does_not_exist.yaml"
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 
 	// WHEN
 	pImpl := toProviderImpl(t, provider)
-	err := pImpl.readCfgFile(configFilename)
+	err = pImpl.readCfgFile(configFilename)
 
 	// THEN
 	assert.Error(t, err)
@@ -66,19 +70,21 @@ func Test_ReadConfig_ShouldFail(t *testing.T) {
 
 	// GIVEN
 	var entries []Entry
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	pImpl := toProviderImpl(t, provider)
 	args := []string{}
 	pImpl.Viper = nil
 
 	// WHEN
-	err := provider.ReadConfig(args)
+	err = provider.ReadConfig(args)
 
 	// THEN
 	assert.Error(t, err)
 
 	// GIVEN
-	provider = NewProvider(entries, "configName", "envPrefix")
+	provider, err = NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	pImpl = toProviderImpl(t, provider)
 	pImpl.pFlagSet = nil
 

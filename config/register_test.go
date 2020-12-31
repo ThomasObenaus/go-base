@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_RegisterEnvParams(t *testing.T) {
@@ -12,11 +13,12 @@ func Test_RegisterEnvParams(t *testing.T) {
 	// GIVEN
 	var entries []Entry
 	entries = append(entries, NewEntry("test", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := pImpl.registerEnvParams()
+	err = pImpl.registerEnvParams()
 
 	// THEN
 	assert.NoError(t, err)
@@ -27,17 +29,19 @@ func Test_RegisterEnvParamsShouldFail(t *testing.T) {
 	// GIVEN
 	var entries []Entry
 	entries = append(entries, NewEntry("", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := pImpl.registerEnvParams()
+	err = pImpl.registerEnvParams()
 
 	// THEN
 	assert.Error(t, err)
 
 	// GIVEN
-	provider = NewProvider(entries, "configName", "envPrefix", CfgFile("", ""))
+	provider, err = NewProvider(entries, "configName", "envPrefix", CfgFile("", ""))
+	require.NoError(t, err)
 	pImpl = toProviderImpl(t, provider)
 
 	// WHEN
@@ -53,12 +57,13 @@ func Test_RegisterAndParseFlags(t *testing.T) {
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage"))
 	entries = append(entries, NewEntry("test2", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	args := []string{"--test1=A"}
 	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := pImpl.registerAndParseFlags(args)
+	err = pImpl.registerAndParseFlags(args)
 
 	// THEN
 	assert.NoError(t, err)
@@ -71,12 +76,13 @@ func Test_RegisterAndParseFlags_ShouldFail(t *testing.T) {
 	// GIVEN - unknown parameter
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	args := []string{"--unkown-param=A"}
 	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := pImpl.registerAndParseFlags(args)
+	err = pImpl.registerAndParseFlags(args)
 
 	// THEN
 	assert.Error(t, err)
@@ -84,7 +90,8 @@ func Test_RegisterAndParseFlags_ShouldFail(t *testing.T) {
 
 	// GIVEN - invalid entry
 	entries = append(entries, NewEntry("", "usage"))
-	provider = NewProvider(entries, "configName", "envPrefix")
+	provider, err = NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	pImpl = toProviderImpl(t, provider)
 	args = []string{}
 
@@ -102,11 +109,12 @@ func Test_SetDefaults(t *testing.T) {
 	var entries []Entry
 	entries = append(entries, NewEntry("test1", "usage", Default("2h")))
 	entries = append(entries, NewEntry("test2", "usage"))
-	provider := NewProvider(entries, "configName", "envPrefix")
+	provider, err := NewProvider(entries, "configName", "envPrefix")
+	require.NoError(t, err)
 	pImpl := toProviderImpl(t, provider)
 
 	// WHEN
-	err := pImpl.setDefaults()
+	err = pImpl.setDefaults()
 
 	// THEN
 	assert.NoError(t, err)

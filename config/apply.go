@@ -43,11 +43,6 @@ func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, err
 	return targetType, targetValue, nil
 }
 
-// TODO: REMOVE
-func Apply(provider Provider, target interface{}) error {
-	return applyConfig(provider, target, "", configTag{})
-}
-
 // applyConfig applies the config that is stored in the given provider. The config will be used to fill the given target type.
 func applyConfig(provider Provider, target interface{}, nameOfParentType string, parent configTag) error {
 

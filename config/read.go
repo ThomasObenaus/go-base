@@ -31,6 +31,11 @@ func (p *providerImpl) ReadConfig(args []string) error {
 		return err
 	}
 
+	// apply the configuration automatically in case a target is available
+	if p.configTarget != nil {
+		return applyConfig(p, p.configTarget, "", configTag{})
+	}
+
 	return nil
 }
 

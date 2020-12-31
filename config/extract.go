@@ -88,8 +88,20 @@ func extractConfigTagFromStructField(field reflect.StructField, parent configTag
 	return isPrimitive, &cfgTag, nil
 }
 
-// TODO: REMOVE
-func Extract(target interface{}) ([]Entry, error) {
+// CreateEntriesFromStruct creates Entries based on the annotations provided at the given target struct.
+//
+// Only fields with annotations of the form
+//	`cfg:"{'name':<name>,'desc':<description>,'default':<default value>}"`
+// will be regarded.
+//
+// For example for the struct below
+// 	type Cfg struct {
+//		Name string `cfg:"{'name':'name','desc':'the name of the config','default':'the name'}"`
+//	}
+// A config entry
+//	e := NewEntry("name","the name of the config",Default("the name"))
+// will be created.
+func CreateEntriesFromStruct(target interface{}) ([]Entry, error) {
 
 	entries := make([]Entry, 0)
 

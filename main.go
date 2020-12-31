@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/ThomasObenaus/go-base/config"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/pkg/errors"
 )
 
 /*
@@ -107,10 +105,6 @@ func main() {
 	spew.Dump(parsedConfig)
 }
 
-func unmarshal(provider config.Provider, target interface{}) error {
-	return config.Apply(provider, target)
-}
-
 var dryRun = config.NewEntry("dry-run", "If true, then sokar won't execute the planned scaling action. Only scaling\n"+
 	"actions triggered via ScaleBy end-point will be executed.", config.Default(false))
 var configEntries = []config.Entry{
@@ -119,21 +113,13 @@ var configEntries = []config.Entry{
 
 func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
-	cfgType := reflect.TypeOf(cfg)
 
-	extractedConfigEntries, err := config.Extract(&cfg)
-	if err != nil {
-		return Cfg{}, errors.Wrapf(err, "Extracting config tags from %v", cfgType)
-	}
-	configEntries = append(configEntries, extractedConfigEntries...)
-
-	provider := config.NewProvider(configEntries, serviceAbbreviation, serviceAbbreviation)
-	err = provider.ReadConfig(args)
+	provider, err := config.NewConfigProvider(&cfg, serviceAbbreviation, serviceAbbreviation, config.CustomConfigEntries(configEntries))
 	if err != nil {
 		return Cfg{}, err
 	}
-
-	if err := unmarshal(provider, &cfg); err != nil {
+	err = provider.ReadConfig(args)
+	if err != nil {
 		return Cfg{}, err
 	}
 

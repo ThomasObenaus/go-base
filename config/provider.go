@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -52,6 +53,10 @@ type providerImpl struct {
 
 	// instance of viper, needed to parse env vars and to read from cfg-file
 	*viper.Viper
+
+	// configTarget is the (user) configuration object the configuration should be applied to.
+	// It can be nil, hence the code has to cover this case.
+	configTarget interface{}
 }
 
 // ProviderOption represents an option for the Provider
@@ -64,18 +69,48 @@ func CfgFile(parameterName, shortParameterName string) ProviderOption {
 	}
 }
 
+// CfgFile specifies a default value
+func CustomConfigEntries(customConfigEntries []Entry) ProviderOption {
+	return func(p *providerImpl) {
+		if p.configEntries == nil {
+			p.configEntries = make([]Entry, 0)
+		}
+		p.configEntries = append(p.configEntries, customConfigEntries...)
+	}
+}
+
 // NewProvider creates a new config provider that is able to parse the command line, env vars and config file based
-// on the given entries
-func NewProvider(configEntries []Entry, configName, envPrefix string, options ...ProviderOption) Provider {
+// on the given entries.
+//
+// DEPRECATED: Please use NewConfigProvider instead.
+func NewProvider(configEntries []Entry, configName, envPrefix string, options ...ProviderOption) (Provider, error) {
+	opt := CustomConfigEntries(configEntries)
+	options = append(options, opt)
+	return NewConfigProvider(nil, configName, envPrefix, options...)
+}
+
+// NewConfigProvider creates a new config provider that is able to parse the command line, env vars and config file based
+// on the given entries. This config provider automatically generates the needed config entries and fills the given config target
+// based on the annotations on this struct.
+// In case custom config entries should be used beside the annotations on the struct one can define them via
+//	CustomConfigEntries(customEntries)`
+// e.g.
+//
+//	customEntries:=[]Entry{
+//	// fill entries here
+//	}
+//	provider,err := NewConfigProvider(&myConfig,"my-config","MY_APP",CustomConfigEntries(customEntries))
+func NewConfigProvider(target interface{}, configName, envPrefix string, options ...ProviderOption) (Provider, error) {
 
 	defaultConfigFileEntry := NewEntry("config-file", "Specifies the full path and name of the configuration file", Bind(true, true))
 	provider := &providerImpl{
-		configEntries:   configEntries,
+		configEntries:   make([]Entry, 0),
 		configName:      configName,
 		envPrefix:       envPrefix,
 		pFlagSet:        pflag.NewFlagSet(configName, pflag.ContinueOnError),
 		Viper:           viper.New(),
 		configFileEntry: defaultConfigFileEntry,
+		configTarget:    target,
 	}
 
 	// apply the options
@@ -89,7 +124,19 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 	// Usually viper.Get() would return a string but now it returns a time.Duration
 	provider.Viper.SetTypeByDefaultValue(true)
 
-	return provider
+	// For backwards compatibility we also allow to provide no target (this will be the case if the NewProvider function is used)
+	if provider.configTarget != nil {
+		configEntries, err := CreateEntriesFromStruct(provider.configTarget)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Extracting configuration annotations")
+		}
+
+		provider.configEntries = append(provider.configEntries, configEntries...)
+	} else {
+		debug("No target given. Hence the config is not automatically processed and applied.")
+	}
+
+	return provider, nil
 }
 
 func (p *providerImpl) String() string {
