@@ -4,18 +4,10 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 )
-
-var verbose = true
-
-func debug(format string, a ...interface{}) {
-	if verbose {
-		fmt.Print("[DBG]")
-		fmt.Printf(format, a...)
-	}
-}
 
 func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, error) {
 	if target == nil {
@@ -44,19 +36,19 @@ func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, err
 }
 
 // applyConfig applies the config that is stored in the given provider. The config will be used to fill the given target type.
-func applyConfig(provider Provider, target interface{}, nameOfParentType string, parent configTag) error {
+func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentType string, parent configTag) error {
 
 	targetType, targetValue, err := getTargetTypeAndValue(target)
 	if err != nil {
 		return errors.Wrapf(err, "Applying config target=%v,nameOfParentType=%s,parent=%s,", target, nameOfParentType, parent)
 	}
 
-	debug("[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, targetType, targetValue)
+	provider.Log(interfaces.LogLevel_Debug, "[Apply-(%s)] structure-type=%v state of structure-type=%v\n", nameOfParentType, targetType, targetValue)
 
-	err = processAllConfigTagsOfStruct(target, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	err = processAllConfigTagsOfStruct(target, provider.Log, nameOfParentType, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 
 		logPrefix := fmt.Sprintf("[Apply-(%s)]", fieldName)
-		debug("%s field-type=%s field-value=%v\n", logPrefix, fieldType, fieldValue)
+		provider.Log(interfaces.LogLevel_Debug, "%s field-type=%s field-value=%v\n", logPrefix, fieldType, fieldValue)
 
 		// handling of non primitives (stucts)
 		if !isPrimitive {
@@ -64,12 +56,12 @@ func applyConfig(provider Provider, target interface{}, nameOfParentType string,
 			if err := applyConfig(provider, fieldValueIf, nameOfParentType, cfgTag); err != nil {
 				return errors.Wrap(err, "Applying non primitive")
 			}
-			debug("%s applied non primitive %v\n", logPrefix, fieldValueIf)
+			provider.Log(interfaces.LogLevel_Debug, "%s applied non primitive %v\n", logPrefix, fieldValueIf)
 			return nil
 		}
 
 		if !provider.IsSet(cfgTag.Name) {
-			debug("%s parameter not provided, nothing will be applied\n", logPrefix)
+			provider.Log(interfaces.LogLevel_Info, "%s parameter not provided, nothing will be applied\n", logPrefix)
 			return nil
 		}
 
@@ -103,7 +95,7 @@ func applyConfig(provider Provider, target interface{}, nameOfParentType string,
 		castedToTargetType := reflect.ValueOf(castedToTargetTypeIf)
 
 		fieldValue.Set(castedToTargetType)
-		debug("%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, val, fieldType, fieldName, cfgTag.Name)
+		provider.Log(interfaces.LogLevel_Debug, "%s applied value '%v' (type=%v) to '%s' based on config '%s'\n", logPrefix, val, fieldType, fieldName, cfgTag.Name)
 		return nil
 	})
 

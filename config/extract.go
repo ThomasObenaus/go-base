@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/pkg/errors"
 )
 
@@ -101,11 +102,11 @@ func extractConfigTagFromStructField(field reflect.StructField, parent configTag
 // A config entry
 //	e := NewEntry("name","the name of the config",Default("the name"))
 // will be created.
-func CreateEntriesFromStruct(target interface{}) ([]Entry, error) {
+func CreateEntriesFromStruct(target interface{}, logger interfaces.LoggerFunc) ([]Entry, error) {
 
 	entries := make([]Entry, 0)
 
-	configTags, err := extractConfigTagsOfStruct(target, "", configTag{})
+	configTags, err := extractConfigTagsOfStruct(target, logger, "", configTag{})
 	if err != nil {
 		return nil, errors.Wrapf(err, "Extracting config tags from %v", target)
 	}
@@ -113,7 +114,7 @@ func CreateEntriesFromStruct(target interface{}) ([]Entry, error) {
 		// create and append the new config entry
 		entry := NewEntry(configTag.Name, configTag.Description, Default(configTag.Def))
 		entries = append(entries, entry)
-		debug("Added new config new entry=%v\n", entry)
+		logger(interfaces.LogLevel_Info, "Added new config new entry=%v\n", entry)
 	}
 
 	return entries, nil
@@ -125,30 +126,30 @@ func CreateEntriesFromStruct(target interface{}) ([]Entry, error) {
 // target - the target that should be processed (has to be a pointer to a struct)
 // nameOfParentField - the name of the targets parent field. This is needed since this function runs recursively through the given target struct.
 // parent - the configTag of the targets parent field. This is needed since this function runs recursively through the given target struct.
-func extractConfigTagsOfStruct(target interface{}, nameOfParentField string, parent configTag) ([]configTag, error) {
+func extractConfigTagsOfStruct(target interface{}, logger interfaces.LoggerFunc, nameOfParentField string, parent configTag) ([]configTag, error) {
 
 	entries := make([]configTag, 0)
 
 	targetType := reflect.TypeOf(target)
 
-	debug("[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentField, targetType, parent)
+	logger(interfaces.LogLevel_Debug, "[Extract-(%s)] structure-type=%v definition=%v\n", nameOfParentField, targetType, parent)
 
-	err := processAllConfigTagsOfStruct(target, nameOfParentField, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	err := processAllConfigTagsOfStruct(target, logger, nameOfParentField, parent, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		logPrefix := fmt.Sprintf("[Extract-(%s)]", fieldName)
 
 		if !isPrimitive {
 			fieldValueIf := fieldValue.Addr().Interface()
-			subEntries, err := extractConfigTagsOfStruct(fieldValueIf, fieldName, cfgTag)
+			subEntries, err := extractConfigTagsOfStruct(fieldValueIf, logger, fieldName, cfgTag)
 			if err != nil {
 				return errors.Wrap(err, "Extracting subentries")
 			}
 			entries = append(entries, subEntries...)
-			debug("%s added %d configTags.\n", logPrefix, len(entries))
+			logger(interfaces.LogLevel_Debug, "%s added %d configTags.\n", logPrefix, len(entries))
 			return nil
 		}
 
 		entries = append(entries, cfgTag)
-		debug("%s added configTag entry=%v.\n", logPrefix, cfgTag)
+		logger(interfaces.LogLevel_Debug, "%s added configTag entry=%v.\n", logPrefix, cfgTag)
 
 		return nil
 	})
@@ -169,7 +170,7 @@ type handleConfigTagFunc func(fieldName string, isPrimitive bool, fieldType refl
 // nameOfParentField - the name of the targets parent field. This is needed since this function runs recursively through the given target struct.
 // parent - the configTag of the targets parent field. This is needed since this function runs recursively through the given target struct.
 // handleConfigTagFun - a function that should be used to handle each of the targets struct fields.
-func processAllConfigTagsOfStruct(target interface{}, nameOfParentField string, parent configTag, handleConfigTagFun handleConfigTagFunc) error {
+func processAllConfigTagsOfStruct(target interface{}, logger interfaces.LoggerFunc, nameOfParentField string, parent configTag, handleConfigTagFun handleConfigTagFunc) error {
 	if target == nil {
 		return fmt.Errorf("The target must not be nil")
 	}
@@ -186,7 +187,7 @@ func processAllConfigTagsOfStruct(target interface{}, nameOfParentField string, 
 
 		fieldName := fullFieldName(nameOfParentField, field.Name)
 		logPrefix := fmt.Sprintf("[Process-(%s)]", fieldName)
-		debug("%s field-type=%s\n", logPrefix, fType)
+		logger(interfaces.LogLevel_Debug, "%s field-type=%s\n", logPrefix, fType)
 
 		isPrimitive, cfgTag, err := extractConfigTagFromStructField(field, parent)
 		if err != nil {
@@ -195,11 +196,11 @@ func processAllConfigTagsOfStruct(target interface{}, nameOfParentField string, 
 
 		// skip the field in case there is no config tag
 		if cfgTag == nil {
-			debug("%s no tag found entry will be skipped.\n", logPrefix)
+			logger(interfaces.LogLevel_Info, "%s no tag found entry will be skipped.\n", logPrefix)
 			continue
 		}
 
-		debug("%s parsed config entry=%v. Is primitive=%t.\n", logPrefix, cfgTag, isPrimitive)
+		logger(interfaces.LogLevel_Debug, "%s parsed config entry=%v. Is primitive=%t.\n", logPrefix, cfgTag, isPrimitive)
 
 		err = handleConfigTagFun(fieldName, isPrimitive, fType, fieldValue, *cfgTag)
 		if err != nil {

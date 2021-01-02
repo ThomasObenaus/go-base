@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func toProviderImpl(t *testing.T, pIf Provider) *providerImpl {
+func toProviderImpl(t *testing.T, pIf interfaces.Provider) *providerImpl {
 	p, ok := pIf.(*providerImpl)
 	require.True(t, ok)
 	require.NotNil(t, p)

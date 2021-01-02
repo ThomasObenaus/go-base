@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -193,7 +194,7 @@ func Test_extractConfigTagsOfStruct_Primitives(t *testing.T) {
 	prims := primitives{}
 
 	// WHEN
-	entries, err := extractConfigTagsOfStruct(&prims, "", configTag{})
+	entries, err := extractConfigTagsOfStruct(&prims, interfaces.NoLogging, "", configTag{})
 
 	// THEN
 	assert.NoError(t, err)
@@ -233,7 +234,7 @@ func Test_extractConfigTagsOfStruct_Required(t *testing.T) {
 	prims := primitives{}
 
 	// WHEN
-	entries, err := extractConfigTagsOfStruct(&prims, "", configTag{})
+	entries, err := extractConfigTagsOfStruct(&prims, interfaces.NoLogging, "", configTag{})
 
 	// THEN
 	assert.NoError(t, err)
@@ -276,7 +277,7 @@ func Test_processAllConfigTagsOfStruct(t *testing.T) {
 
 	// WHEN
 	obtainedConfigTags := make([]configTag, 0)
-	err := processAllConfigTagsOfStruct(&prims, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	err := processAllConfigTagsOfStruct(&prims, interfaces.NoLogging, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		obtainedConfigTags = append(obtainedConfigTags, cfgTag)
 		return nil
 	})
@@ -296,13 +297,13 @@ func Test_processAllConfigTagsOfStruct_Fail(t *testing.T) {
 	prims := primitives{}
 
 	// WHEN
-	errNoPointer := processAllConfigTagsOfStruct(prims, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	errNoPointer := processAllConfigTagsOfStruct(prims, interfaces.NoLogging, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		return nil
 	})
-	errNil := processAllConfigTagsOfStruct(nil, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	errNil := processAllConfigTagsOfStruct(nil, interfaces.NoLogging, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		return nil
 	})
-	errFailHandler := processAllConfigTagsOfStruct(&prims, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
+	errFailHandler := processAllConfigTagsOfStruct(&prims, interfaces.NoLogging, "", configTag{}, func(fieldName string, isPrimitive bool, fieldType reflect.Type, fieldValue reflect.Value, cfgTag configTag) error {
 		return fmt.Errorf("FAILURE")
 	})
 
@@ -333,7 +334,7 @@ func Test_extractConfigTagsOfStruct(t *testing.T) {
 	strct := my{}
 
 	// WHEN
-	cfgTags, errNoPointer := extractConfigTagsOfStruct(&strct, "", configTag{})
+	cfgTags, errNoPointer := extractConfigTagsOfStruct(&strct, interfaces.NoLogging, "", configTag{})
 
 	// THEN
 	require.NoError(t, errNoPointer)

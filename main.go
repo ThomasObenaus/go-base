@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ThomasObenaus/go-base/config"
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/davecgh/go-spew/spew"
 )
 
@@ -51,8 +52,8 @@ type targetSecret struct {
 
 // TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Custom function hooks for complex parsing
-// TODO: Custom logger hook function
 // TODO: Check if pointer fields are supported
+// TODO: Add support for shorthand flags
 
 // HINT: Desired schema:
 // cfg:"name:<name>;;desc:<description>;;default:<default value>"
@@ -114,7 +115,13 @@ var configEntries = []config.Entry{
 func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	cfg := Cfg{}
 
-	provider, err := config.NewConfigProvider(&cfg, serviceAbbreviation, serviceAbbreviation, config.CustomConfigEntries(configEntries))
+	provider, err := config.NewConfigProvider(
+		&cfg,
+		serviceAbbreviation,
+		serviceAbbreviation,
+		config.CustomConfigEntries(configEntries),
+		config.Logger(interfaces.InfoLogger),
+	)
 	if err != nil {
 		return Cfg{}, err
 	}
@@ -130,7 +137,7 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	return cfg, nil
 }
 
-func (cfg *Cfg) fillCfgValues(provider config.Provider) error {
+func (cfg *Cfg) fillCfgValues(provider interfaces.Provider) error {
 	cfg.DryRun = provider.GetBool(dryRun.Name())
 	cfg.Name = "Thomas (OVERWRITTEN)"
 	return nil

@@ -10,6 +10,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func ignoreAllCallsToLogger(mockedProvider *mock_provider.MockProvider) {
+	// just please the calls to the logger
+	mockedProvider.EXPECT().Log(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockedProvider.EXPECT().Log(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	mockedProvider.EXPECT().Log(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+}
+
 func Test_getTargetTypeAndValue(t *testing.T) {
 	// GIVEN
 	type my struct {
@@ -75,6 +82,7 @@ func Test_applyConfig_Empty(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockedProvider := mock_provider.NewMockProvider(mockCtrl)
 	myTestCfg := empty{}
+	ignoreAllCallsToLogger(mockedProvider)
 
 	// WHEN
 	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{})
@@ -102,6 +110,7 @@ func Test_applyConfig(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockedProvider := mock_provider.NewMockProvider(mockCtrl)
 	myTestCfg := myTestConfig{}
+	ignoreAllCallsToLogger(mockedProvider)
 
 	mockedProvider.EXPECT().IsSet("field-1").Return(true)
 	mockedProvider.EXPECT().Get("field-1").Return("value field-1")
@@ -152,6 +161,7 @@ func Test_applyConfig_Fail(t *testing.T) {
 	defer mockCtrl.Finish()
 	mockedProviderWrongType := mock_provider.NewMockProvider(mockCtrl)
 	myTestCfgWrongType := myTestConfigWrongType{}
+	ignoreAllCallsToLogger(mockedProviderWrongType)
 
 	mockedProviderWrongType.EXPECT().IsSet("field-1").Return(true)
 	mockedProviderWrongType.EXPECT().Get("field-1").Return("that is not an int")
@@ -172,6 +182,7 @@ func Test_applyConfig_Fail(t *testing.T) {
 
 	mockedProviderWrongTypeSliceOfStructs := mock_provider.NewMockProvider(mockCtrl)
 	myTestCfgWrongTypeSliceOfStructs := myTestConfigWrongTypeSliceOfStructs{}
+	ignoreAllCallsToLogger(mockedProviderWrongTypeSliceOfStructs)
 
 	mockedProviderWrongTypeSliceOfStructs.EXPECT().IsSet("field-1").Return(true)
 	mockedProviderWrongTypeSliceOfStructs.EXPECT().Get("field-1").Return("that is not an int")
@@ -189,6 +200,7 @@ func Test_applyConfig_Fail(t *testing.T) {
 
 	mockedProvider := mock_provider.NewMockProvider(mockCtrl)
 	myTestCfg := myTestConfigWrongTypeSliceOfStructs{}
+	ignoreAllCallsToLogger(mockedProvider)
 
 	// WHEN
 	err := applyConfig(mockedProvider, myTestCfg, "", configTag{})

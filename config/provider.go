@@ -2,36 +2,12 @@ package config
 
 import (
 	"fmt"
-	"time"
 
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
-
-type Provider interface {
-	ReadConfig(args []string) error
-	Get(key string) interface{}
-	GetString(key string) string
-	GetBool(key string) bool
-	GetInt(key string) int
-	GetInt32(key string) int32
-	GetInt64(key string) int64
-	GetUint(key string) uint
-	GetUint32(key string) uint32
-	GetUint64(key string) uint64
-	GetFloat64(key string) float64
-	GetTime(key string) time.Time
-	GetDuration(key string) time.Duration
-	GetIntSlice(key string) []int
-	GetStringSlice(key string) []string
-	GetStringMap(key string) map[string]interface{}
-	GetStringMapString(key string) map[string]string
-	GetStringMapStringSlice(key string) map[string][]string
-	GetSizeInBytes(key string) uint
-	IsSet(key string) bool
-	String() string
-}
 
 // providerImpl is a structure containing the parsed configuration
 type providerImpl struct {
@@ -57,6 +33,8 @@ type providerImpl struct {
 	// configTarget is the (user) configuration object the configuration should be applied to.
 	// It can be nil, hence the code has to cover this case.
 	configTarget interface{}
+
+	logger interfaces.LoggerFunc
 }
 
 // ProviderOption represents an option for the Provider
@@ -79,14 +57,29 @@ func CustomConfigEntries(customConfigEntries []Entry) ProviderOption {
 	}
 }
 
+// Logger exchanges the logger function. This provides the possibility to integrate your own logger.
+// Per default the NoLogging function is used (disables logging completely).
+// Other predefined logger functions (based on fmt.Printf) are DebugLogger, InfoLogger, WarnLogger and ErrorLogger.
+func Logger(logger interfaces.LoggerFunc) ProviderOption {
+	return func(p *providerImpl) {
+		p.logger = logger
+	}
+}
+
 // NewProvider creates a new config provider that is able to parse the command line, env vars and config file based
 // on the given entries.
 //
 // DEPRECATED: Please use NewConfigProvider instead.
-func NewProvider(configEntries []Entry, configName, envPrefix string, options ...ProviderOption) (Provider, error) {
+func NewProvider(configEntries []Entry, configName, envPrefix string, options ...ProviderOption) (interfaces.Provider, error) {
 	opt := CustomConfigEntries(configEntries)
 	options = append(options, opt)
-	return NewConfigProvider(nil, configName, envPrefix, options...)
+	provider, err := NewConfigProvider(nil, configName, envPrefix, options...)
+	if err != nil {
+		return nil, err
+	}
+
+	provider.Log(interfaces.LogLevel_Warn, "You are using the old, deprecated config interface 'NewProvider' please use 'NewConfigProvider' instead.")
+	return provider, nil
 }
 
 // NewConfigProvider creates a new config provider that is able to parse the command line, env vars and config file based
@@ -100,8 +93,7 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 //	// fill entries here
 //	}
 //	provider,err := NewConfigProvider(&myConfig,"my-config","MY_APP",CustomConfigEntries(customEntries))
-func NewConfigProvider(target interface{}, configName, envPrefix string, options ...ProviderOption) (Provider, error) {
-
+func NewConfigProvider(target interface{}, configName, envPrefix string, options ...ProviderOption) (interfaces.Provider, error) {
 	defaultConfigFileEntry := NewEntry("config-file", "Specifies the full path and name of the configuration file", Bind(true, true))
 	provider := &providerImpl{
 		configEntries:   make([]Entry, 0),
@@ -111,11 +103,16 @@ func NewConfigProvider(target interface{}, configName, envPrefix string, options
 		Viper:           viper.New(),
 		configFileEntry: defaultConfigFileEntry,
 		configTarget:    target,
+		logger:          interfaces.NoLogging,
 	}
 
 	// apply the options
 	for _, opt := range options {
 		opt(provider)
+	}
+
+	if provider.logger == nil {
+		return nil, fmt.Errorf("The Logger set via config.Logger must not be nil")
 	}
 
 	// Enable casting to type based on given default values
@@ -126,17 +123,20 @@ func NewConfigProvider(target interface{}, configName, envPrefix string, options
 
 	// For backwards compatibility we also allow to provide no target (this will be the case if the NewProvider function is used)
 	if provider.configTarget != nil {
-		configEntries, err := CreateEntriesFromStruct(provider.configTarget)
+		configEntries, err := CreateEntriesFromStruct(provider.configTarget, provider.Log)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Extracting configuration annotations")
 		}
-
 		provider.configEntries = append(provider.configEntries, configEntries...)
 	} else {
-		debug("No target given. Hence the config is not automatically processed and applied.")
+		provider.logger(interfaces.LogLevel_Info, "No target given. Hence the config is not automatically processed and applied.")
 	}
 
 	return provider, nil
+}
+
+func (p *providerImpl) Log(lvl interfaces.LogLevel, formatString string, a ...interface{}) {
+	p.logger(lvl, formatString, a...)
 }
 
 func (p *providerImpl) String() string {
