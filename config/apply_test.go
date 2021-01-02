@@ -208,3 +208,34 @@ func Test_applyConfig_Fail(t *testing.T) {
 	// THEN
 	assert.Error(t, err)
 }
+
+func Test_applyConfig_slices(t *testing.T) {
+	// GIVEN
+	type myTestConfig struct {
+		Field1 []int    `cfg:"{'name':'field-1','default':[1,2,3]}"`
+		Field2 []bool   `cfg:"{'name':'field-2','default':[true,false]}"`
+		Field3 []string `cfg:"{'name':'field-3','default':['a','b','c']}"`
+	}
+
+	mockCtrl := gomock.NewController(t)
+	defer mockCtrl.Finish()
+	mockedProvider := mock_provider.NewMockProvider(mockCtrl)
+	myTestCfg := myTestConfig{}
+	ignoreAllCallsToLogger(mockedProvider)
+
+	mockedProvider.EXPECT().IsSet("field-1").Return(true)
+	mockedProvider.EXPECT().Get("field-1").Return([]int{3, 2, 1})
+	mockedProvider.EXPECT().IsSet("field-2").Return(true)
+	mockedProvider.EXPECT().Get("field-2").Return([]bool{false, true})
+	mockedProvider.EXPECT().IsSet("field-3").Return(true)
+	mockedProvider.EXPECT().Get("field-3").Return([]string{"c", "b", "a"})
+
+	// WHEN
+	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{})
+
+	// THEN
+	assert.NoError(t, err)
+	assert.Len(t, myTestCfg.Field1, 3)
+	assert.Len(t, myTestCfg.Field2, 2)
+	assert.Len(t, myTestCfg.Field3, 3)
+}

@@ -6,7 +6,6 @@ import (
 
 	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 )
 
 func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, error) {
@@ -69,22 +68,10 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 			return fmt.Errorf("Can't set value to field (fieldName=%s,fieldType=%v,fieldValue=%s)", fieldName, fieldType, fieldValue)
 		}
 
-		val := provider.Get(cfgTag.Name)
-		typeOfValueFromConfig := reflect.TypeOf(val)
-
-		// Special treatment for slices of structs. This is needed since flag can't handle them instead the value is encodes in a string.
-		if typeOfValueFromConfig.Kind() == reflect.String && fieldType.Kind() == reflect.Slice && fieldType.Elem().Kind() == reflect.Struct {
-
-			sliceOfMapsAsString, err := cast.ToStringE(val)
-			if err != nil {
-				return errors.Wrapf(err, "Casting %v (type=%T) to string", val, val)
-			}
-
-			sliceOfMaps, err := parseStringContainingSliceOfMaps(sliceOfMapsAsString)
-			if err != nil {
-				return errors.Wrapf(err, "Parsing %v (type=%T) to []map[string]interface{}", val, val)
-			}
-			val = sliceOfMaps
+		valueFromViper := provider.Get(cfgTag.Name)
+		val, err := handleViperWorkarounds(valueFromViper, fieldType)
+		if err != nil {
+			return errors.Wrapf(err, "Handling viper workarounds")
 		}
 
 		// cast the parsed default value to the target type

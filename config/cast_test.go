@@ -3,6 +3,7 @@ package config
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -277,4 +278,37 @@ func Test_parseStringContainingSliceOfMaps(t *testing.T) {
 	assert.Empty(t, r4)
 	assert.Error(t, err5)
 	assert.Empty(t, r5)
+}
+
+func Test_handleViperWorkarounds(t *testing.T) {
+	// GIVEN
+	type my struct {
+		Field1 string
+		Field2 int
+	}
+
+	// WHEN
+	valNil, errNil := handleViperWorkarounds(nil, reflect.TypeOf(0))
+	valNoString, errNoString := handleViperWorkarounds(1, reflect.TypeOf(0))
+	valNoSlice, errNoSlice := handleViperWorkarounds("1", reflect.TypeOf("0"))
+	valBoolSlice, errBoolSlice := handleViperWorkarounds("[true,false,true]", reflect.TypeOf([]bool{}))
+	valMapSlice, errMapSlice := handleViperWorkarounds(`[{"field1":"hello 1","field2":11},{"field1":"hello 2","field2":22}]`, reflect.TypeOf([]my{}))
+	valDurationSlice, errDurationSlice := handleViperWorkarounds("", reflect.TypeOf([]time.Duration{}))
+
+	// THEN
+	assert.NoError(t, errNil)
+	assert.Nil(t, valNil)
+	assert.NoError(t, errNoString)
+	assert.Equal(t, 1, valNoString)
+	assert.NoError(t, errNoSlice)
+	assert.Equal(t, "1", valNoSlice)
+	assert.NoError(t, errBoolSlice)
+	assert.Equal(t, []bool{true, false, true}, valBoolSlice)
+	assert.NoError(t, errMapSlice)
+	assert.Equal(t, []map[string]interface{}{
+		{"field1": "hello 1", "field2": float64(11)},
+		{"field1": "hello 2", "field2": float64(22)},
+	}, valMapSlice)
+	assert.Error(t, errDurationSlice)
+	assert.Nil(t, valDurationSlice)
 }

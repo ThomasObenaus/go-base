@@ -8,57 +8,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-/*
-{
-	"name":"conf1",
-	"prio":1,
-	"immutable":true,
-	"config_store": {
-	  "file-path": "cfgs",
-	  "target-secrets": [
-		{
-		  "name": "secret1",
-		  "key": "23948239842kdsdkfj",
-		  "count": 12
-		}
-	  ]
-	},
-	"tasks": {
-	  "table-name": "tasks",
-	  "use-db": true
-	}
-}
-
-// according struct
-type cfg struct {
-	Name string `cfg:"name:name;;desc:the name of the config"`
-	Prio int `cfg:"name:prio;;desc:the prio;;default:0"`
-	Immutable bool `cfg:"name:immutable;;desc:can be modified or not;;default:false"`
-	ConfigStore configStore `cfg:"name:config-store;;desc:the config store"`
-}
-
-type configStore struct {
-	FilePath string `cfg:"name:file-path;;desc:the path;;default:configs/"`
-	TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;"`
-	//TargetSecrets []targetSecret `cfg:"name:target-secrets;;desc:list of target secrets;;default:[{}]"`
-}
-
-type targetSecret struct {
-	Name string `cfg:"name:name;;desc:the name of the config"`
-	Key string `cfg:"name:name;;desc:the name of the config"`
-	Count int `cfg:"name:name;;desc:the name of the config;;default:0"`
-}
-*/
-
 // TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Custom function hooks for complex parsing
 // TODO: Check if pointer fields are supported
 // TODO: Add support for shorthand flags
-
-// HINT: Desired schema:
-// cfg:"name:<name>;;desc:<description>;;default:<default value>"
-// ';;' is the separator
-// if no default value is given then the config field is treated as required
+// TODO: Think about required vs. optional (explicit vs implicit)
 
 type Cfg struct {
 	DryRun        bool           // this should be ignored since its not annotated, but it can be still read using on the usual way
@@ -130,14 +84,14 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 		return Cfg{}, err
 	}
 
-	if err := cfg.fillCfgValues(provider); err != nil {
+	if err := cfg.overWriteCfgValues(provider); err != nil {
 		return Cfg{}, err
 	}
 
 	return cfg, nil
 }
 
-func (cfg *Cfg) fillCfgValues(provider interfaces.Provider) error {
+func (cfg *Cfg) overWriteCfgValues(provider interfaces.Provider) error {
 	cfg.DryRun = provider.GetBool(dryRun.Name())
 	cfg.Name = "Thomas (OVERWRITTEN)"
 	return nil

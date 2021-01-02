@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/cast"
 )
 
 func isFieldExported(typeOfField reflect.StructField) bool {
@@ -16,6 +18,16 @@ func isFieldExported(typeOfField reflect.StructField) bool {
 // castToPrimitive supports casting of primitive types (such as int, string,...) to the given target type.
 func castToPrimitive(rawValue interface{}, targetType reflect.Type) (interface{}, error) {
 	typeOfValue := reflect.TypeOf(rawValue)
+
+	if targetType == reflect.TypeOf(time.Second) {
+		dur, err := cast.ToDurationE(rawValue)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Casting '%v' to duration", rawValue)
+		}
+		rawValue = dur
+		typeOfValue = reflect.TypeOf(rawValue)
+	}
+
 	if !typeOfValue.ConvertibleTo(targetType) {
 		return nil, fmt.Errorf("Can't convert %v to %v", typeOfValue, targetType)
 	}
@@ -176,4 +188,52 @@ func parseStringContainingSliceOfMaps(mapString string) ([]map[string]interface{
 		return nil, errors.Wrap(err, "Parsing string that contains a slice of maps")
 	}
 	return maps, nil
+}
+
+// parseStringContainingSliceOfBooleans can be used to parse a json string that represents an array of booleans.
+//
+// e.g.:
+// 	v1 := `[true,false,true]`
+func parseStringContainingSliceOfBooleans(booleanSliceString string) ([]bool, error) {
+	booleanSliceString = strings.ReplaceAll(booleanSliceString, "'", `"`)
+	booleans := []bool{}
+	err := json.Unmarshal([]byte(booleanSliceString), &booleans)
+	if err != nil {
+		return nil, errors.Wrap(err, "Parsing string that contains a slice of booleans")
+	}
+	return booleans, nil
+}
+
+// handleViperWorkarounds viper does not handle all types correctly. e.g. a slice of structs or booleans is not supported and just returned as
+// a jsonstring. handleViperWorkarounds casts those jsonstrings into the correct golang types.
+func handleViperWorkarounds(val interface{}, targetType reflect.Type) (interface{}, error) {
+	if val == nil {
+		return val, nil
+	}
+
+	typeOfValue := reflect.TypeOf(val)
+
+	// immediately return / do nothing in case we have no string
+	if typeOfValue.Kind() != reflect.String {
+		return val, nil
+	}
+
+	// immediately return / do nothing in case the target type is no slice
+	if targetType.Kind() != reflect.Slice {
+		return val, nil
+	}
+
+	valueAsString, err := cast.ToStringE(val)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Casting %v (type=%T) to string", val, val)
+	}
+
+	switch targetType.Elem().Kind() {
+	case reflect.Struct:
+		return parseStringContainingSliceOfMaps(valueAsString)
+	case reflect.Bool:
+		return parseStringContainingSliceOfBooleans(valueAsString)
+	default:
+		return nil, fmt.Errorf("Support for slice of type %s is not supported", targetType.Elem().Kind())
+	}
 }
