@@ -184,3 +184,37 @@ func ExampleNewConfigProvider_slices() {
 	// Output:
 	// field-1='[a b c]', field-2=[4 5 6], field-3=[false true]
 }
+
+func ExampleNewConfigProvider_structs() {
+	type myNestedStruct struct {
+		FieldA string `cfg:"{'name':'field-a','desc':'This is field a','default':'default of field a'}"`
+		FieldB int    `cfg:"{'name':'field-b','desc':'This is field b','default':22}"`
+	}
+	// The configuration with the annotations needed in order to define how the config should be filled
+	type myCfg struct {
+		Field1 myNestedStruct   `cfg:"{'name':'field-1','desc':'This is field 1','default':{'field-a':'default','field-b':33}}"`
+		Field2 []myNestedStruct `cfg:"{'name':'field-2','desc':'This is field 2','default':[{'field-a':'value','field-b':33},{}]}"`
+	}
+	cfg := myCfg{}
+
+	// Create a provider based on the given config struct
+	provider, err := NewConfigProvider(&cfg, "MyConfig", "MY_APP")
+	if err != nil {
+		panic(err)
+	}
+
+	// As commandline arguments the parameter 'field-1' is missing, hence its default value will be used (see above)
+	args := []string{
+		"--field-1.field-a=the value",
+	}
+
+	// Read the parameters given via commandline into the config struct
+	err = provider.ReadConfig(args)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("field-1='%v', field-2=%v\n", cfg.Field1, cfg.Field2)
+	// Output:
+	// field-1='{the value 22}', field-2=[{value 33} {default of field a 22}]
+}
