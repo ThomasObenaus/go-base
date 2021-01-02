@@ -154,9 +154,10 @@ func ExampleNewConfigProvider_slices() {
 
 	// The configuration with the annotations needed in order to define how the config should be filled
 	type myCfg struct {
-		Field1 []string `cfg:"{'name':'field-1','desc':'This is field 1','default':['a','b','c']}"`
-		Field2 []int    `cfg:"{'name':'field-2','desc':'This is field 2','default':[1,2,3]}"`
-		Field3 []bool   `cfg:"{'name':'field-3','desc':'This is field 3','default':[true,false,true]}"`
+		Field1 []string  `cfg:"{'name':'field-1','desc':'This is field 1','default':['a','b','c']}"`
+		Field2 []int     `cfg:"{'name':'field-2','desc':'This is field 2','default':[1,2,3]}"`
+		Field3 []bool    `cfg:"{'name':'field-3','desc':'This is field 3','default':[true,false,true]}"`
+		Field4 []float64 `cfg:"{'name':'field-4','desc':'This is field 4','default':[1.1,2.2,3.3]}"`
 	}
 	cfg := myCfg{}
 
@@ -170,6 +171,7 @@ func ExampleNewConfigProvider_slices() {
 	args := []string{
 		"--field-2=4,5,6",
 		"--field-3=false,true",
+		"--field-4=4.4,5.5,6.6",
 	}
 
 	// Read the parameters given via commandline into the config struct

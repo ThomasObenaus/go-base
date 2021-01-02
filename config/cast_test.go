@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -253,23 +254,25 @@ func Test_parseStringContainingSliceOfMaps(t *testing.T) {
 	v3 := `invalid`
 	v4 := `{}`
 	v5 := `[1 2 3 4]`
+	mapType := reflect.TypeOf([]map[string]interface{}{})
 
 	// WHEN
-	r1, err1 := parseStringContainingSliceOfMaps(v1)
-	r2, err2 := parseStringContainingSliceOfMaps(v2)
-	r3, err3 := parseStringContainingSliceOfMaps(v3)
-	r4, err4 := parseStringContainingSliceOfMaps(v4)
-	r5, err5 := parseStringContainingSliceOfMaps(v5)
+	r1, err1 := parseStringContainingSliceOfX(v1, mapType)
+	r2, err2 := parseStringContainingSliceOfX(v2, mapType)
+	r3, err3 := parseStringContainingSliceOfX(v3, mapType)
+	r4, err4 := parseStringContainingSliceOfX(v4, mapType)
+	r5, err5 := parseStringContainingSliceOfX(v5, mapType)
 
 	// THEN
 	require.NoError(t, err1)
 	require.Len(t, r1, 2)
-	assert.Equal(t, "name1", r1[0]["name"])
-	assert.Equal(t, "key1", r1[0]["key"])
-	assert.Equal(t, float64(1), r1[0]["count"])
-	assert.Equal(t, "name2", r1[1]["name"])
-	assert.Equal(t, "key2", r1[1]["key"])
-	assert.Equal(t, float64(2), r1[1]["count"])
+
+	assert.Equal(t, "name1", cast.ToStringMap(r1[0])["name"])
+	assert.Equal(t, "key1", cast.ToStringMap(r1[0])["key"])
+	assert.Equal(t, float64(1), cast.ToStringMap(r1[0])["count"])
+	assert.Equal(t, "name2", cast.ToStringMap(r1[1])["name"])
+	assert.Equal(t, "key2", cast.ToStringMap(r1[1])["key"])
+	assert.Equal(t, float64(2), cast.ToStringMap(r1[1])["count"])
 	require.NoError(t, err2)
 	assert.Empty(t, r2)
 	assert.Error(t, err3)
@@ -303,12 +306,19 @@ func Test_handleViperWorkarounds(t *testing.T) {
 	assert.NoError(t, errNoSlice)
 	assert.Equal(t, "1", valNoSlice)
 	assert.NoError(t, errBoolSlice)
-	assert.Equal(t, []bool{true, false, true}, valBoolSlice)
+	bSlice := cast.ToBoolSlice(valBoolSlice)
+	assert.Equal(t, []bool{true, false, true}, bSlice)
 	assert.NoError(t, errMapSlice)
+
+	mapSlice := []map[string]interface{}{}
+	for _, m := range valMapSlice.([]interface{}) {
+		mapSlice = append(mapSlice, cast.ToStringMap(m))
+	}
+
 	assert.Equal(t, []map[string]interface{}{
 		{"field1": "hello 1", "field2": float64(11)},
 		{"field1": "hello 2", "field2": float64(22)},
-	}, valMapSlice)
+	}, mapSlice)
 	assert.Error(t, errDurationSlice)
 	assert.Nil(t, valDurationSlice)
 }

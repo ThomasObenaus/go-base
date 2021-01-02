@@ -190,18 +190,20 @@ func parseStringContainingSliceOfMaps(mapString string) ([]map[string]interface{
 	return maps, nil
 }
 
-// parseStringContainingSliceOfBooleans can be used to parse a json string that represents an array of booleans.
-//
-// e.g.:
-// 	v1 := `[true,false,true]`
-func parseStringContainingSliceOfBooleans(booleanSliceString string) ([]bool, error) {
-	booleanSliceString = strings.ReplaceAll(booleanSliceString, "'", `"`)
-	booleans := []bool{}
-	err := json.Unmarshal([]byte(booleanSliceString), &booleans)
+func parseStringContainingSliceOfX(sliceString string, targetSliceType reflect.Type) ([]interface{}, error) {
+	sliceString = strings.ReplaceAll(sliceString, "'", `"`)
+
+	slice := reflect.MakeSlice(targetSliceType, 0, 0).Interface()
+	err := json.Unmarshal([]byte(sliceString), &slice)
 	if err != nil {
-		return nil, errors.Wrap(err, "Parsing string that contains a slice of booleans")
+		return nil, errors.Wrapf(err, "Parsing string that contains a slice of %v", targetSliceType)
 	}
-	return booleans, nil
+
+	if reflect.TypeOf(slice).Kind() != reflect.Slice {
+		return nil, fmt.Errorf("Unmarshalling did not produce the expected slice type instead it produced '%T'", slice)
+	}
+
+	return slice.([]interface{}), nil
 }
 
 // handleViperWorkarounds viper does not handle all types correctly. e.g. a slice of structs or booleans is not supported and just returned as
@@ -227,13 +229,5 @@ func handleViperWorkarounds(val interface{}, targetType reflect.Type) (interface
 	if err != nil {
 		return nil, errors.Wrapf(err, "Casting %v (type=%T) to string", val, val)
 	}
-
-	switch targetType.Elem().Kind() {
-	case reflect.Struct:
-		return parseStringContainingSliceOfMaps(valueAsString)
-	case reflect.Bool:
-		return parseStringContainingSliceOfBooleans(valueAsString)
-	default:
-		return nil, fmt.Errorf("Support for slice of type %s is not supported", targetType.Elem().Kind())
-	}
+	return parseStringContainingSliceOfX(valueAsString, targetType)
 }
