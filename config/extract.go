@@ -13,11 +13,12 @@ import (
 // configTag represents the definition for a config read from the type tag.
 // A config tag on a type is expected to be defined as:
 //
-// 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>}"`
+// 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>,'mapfun':<name of the mapping function>}"`
 type configTag struct {
 	Name        string      `json:"name,omitempty"`
 	Description string      `json:"desc,omitempty"`
 	Def         interface{} `json:"default,omitempty"`
+	MapFunName  string      `json:"mapfun,omitempty"`
 	desiredType reflect.Type
 }
 
@@ -30,7 +31,7 @@ func (e configTag) IsRequired() bool {
 }
 
 // parseConfigTagDefinition parses a definition like
-// 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>}"`
+// 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>,'mapfun':<name of the mapping function>}"`
 // to a configTag
 func parseConfigTagDefinition(configTagStr string, typeOfEntry reflect.Type, nameOfParent string) (configTag, error) {
 	configTagStr = strings.TrimSpace(configTagStr)
@@ -52,10 +53,25 @@ func parseConfigTagDefinition(configTagStr string, typeOfEntry reflect.Type, nam
 		Name:        fullFieldName(nameOfParent, parsedDefinition.Name),
 		Description: parsedDefinition.Description,
 		desiredType: typeOfEntry,
+		MapFunName:  parsedDefinition.MapFunName,
 	}
 
 	// only in case a default value is given
 	if parsedDefinition.Def != nil {
+
+		// This handles the case where the type of a field defined in the config annotation does not match
+		// the type of the field that is annotated.
+		// Example:
+		// type cfg struct {
+		// 	F1 zerolog.Level `cfg:"{'name':'logl','default':'info'}"`
+		// }
+		// Here F1 is of type zerolog.Level (int8) and the defined type in the annotation is string (based on the default value)
+		//
+		// In order to support this situation we take the type of the config annotation to cast the default value.
+		if typeOfEntry != reflect.TypeOf(parsedDefinition.Def) {
+			typeOfEntry = reflect.TypeOf(parsedDefinition.Def)
+		}
+
 		castedValue, err := castToTargetType(parsedDefinition.Def, typeOfEntry)
 		if err != nil {
 			return configTag{}, errors.Wrap(err, "Casting parsed default value to target type")
@@ -108,7 +124,7 @@ func CreateEntriesFromStruct(target interface{}, logger interfaces.LoggerFunc) (
 
 	configTags, err := extractConfigTagsOfStruct(target, logger, "", configTag{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "Extracting config tags from %v", target)
+		return nil, err
 	}
 	for _, configTag := range configTags {
 		// create and append the new config entry
@@ -155,7 +171,7 @@ func extractConfigTagsOfStruct(target interface{}, logger interfaces.LoggerFunc,
 	})
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Extracting config tags for %v", targetType)
+		return nil, errors.Wrapf(err, "Extracting config tags from type %v", targetType)
 	}
 	return entries, nil
 }
@@ -218,8 +234,8 @@ func isOfPrimitiveType(fieldType reflect.Type) (bool, error) {
 	case reflect.Struct:
 		return false, nil
 	case reflect.String, reflect.Bool, reflect.Float32, reflect.Float64,
-		reflect.Complex64, reflect.Complex128, reflect.Int, reflect.Int16,
-		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint16,
+		reflect.Complex64, reflect.Complex128, reflect.Int, reflect.Int8, reflect.Int16,
+		reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16,
 		reflect.Uint32, reflect.Uint64:
 		return true, nil
 	case reflect.Ptr:
