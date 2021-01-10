@@ -64,6 +64,30 @@ func Test_NewProviderOverrideCfgFile(t *testing.T) {
 	assert.Equal(t, "f", pImpl.configFileEntry.flagShortName)
 }
 
+func Test_RegisterMappingFunc(t *testing.T) {
+	// GIVEN
+	type myCfg struct {
+	}
+	cfg := myCfg{}
+
+	provider, err := NewConfigProvider(&cfg, "MyConfig", "MY_APP")
+	require.NoError(t, err)
+
+	// WHEN
+	err1 := provider.RegisterMappingFunc("fun", func(rawUntypedValue interface{}, targetType reflect.Type) (interface{}, error) {
+		return rawUntypedValue, nil
+	})
+	err2 := provider.RegisterMappingFunc("fun", nil)
+	err3 := provider.RegisterMappingFunc("", func(rawUntypedValue interface{}, targetType reflect.Type) (interface{}, error) {
+		return rawUntypedValue, nil
+	})
+
+	// THEN
+	assert.NoError(t, err1)
+	assert.Error(t, err2)
+	assert.Error(t, err3)
+}
+
 func ExampleNewProvider() {
 	var configEntries []Entry
 
