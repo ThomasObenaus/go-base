@@ -10,14 +10,12 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// TODO: Custom function hooks for complex parsing --> example: sokar loglevel (string -> int8/ zerolog.Loglevel)
 // TODO: Fail in case there are duplicate settings (names) configured
 // TODO: Check if pointer fields are supported
 // TODO: Add support for shorthand flags
 // TODO: Think about required vs. optional (explicit vs implicit)
 
 type Cfg struct {
-	LogLevel      zerolog.Level  `cfg:"{'name':'log-level','default':'info','mapfun':'strToLogLevel'}"`
 	DryRun        bool           // this should be ignored since its not annotated, but it can be still read using on the usual way
 	Name          string         `cfg:"{'name':'name','desc':'the name of the config'}"`
 	Prio          int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
@@ -29,8 +27,9 @@ type Cfg struct {
 }
 
 type configStore struct {
-	FilePath     string       `cfg:"{'name':'file-path','desc':'the path','default':'configs/'}"`
-	TargetSecret targetSecret `cfg:"{'name':'target-secret','desc':'the secret'}"`
+	FilePath     string        `cfg:"{'name':'file-path','desc':'the path','default':'configs/'}"`
+	TargetSecret targetSecret  `cfg:"{'name':'target-secret','desc':'the secret'}"`
+	LogLevel     zerolog.Level `cfg:"{'name':'log-level','default':'info','mapfun':'strToLogLevel'}"`
 }
 
 type targetSecret struct {
@@ -42,7 +41,6 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
-		"--log-level=fatal",
 		"--dry-run",
 		"--name=hello",
 		"--prio=23",
@@ -52,6 +50,7 @@ func main() {
 		"--config-store.target-secret.key=#lsdpo93",
 		"--config-store.target-secret.name=mysecret",
 		"--config-store.target-secret.count=2323",
+		"--config-store.log-level=fatal",
 		"--target-secrets=[{'name':'mysecret1','key':'sdlfks','count':231},{'name':'mysecret2','key':'sdlfks','count':231}]",
 	}
 
