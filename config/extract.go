@@ -68,8 +68,8 @@ func parseConfigTagDefinition(configTagStr string, typeOfEntry reflect.Type, nam
 		// Here F1 is of type zerolog.Level (int8) and the defined type in the annotation is string (based on the default value)
 		//
 		// In order to support this situation we take the type of the config annotation to cast the default value.
-		if typeOfEntry != reflect.TypeOf(parsedDefinition.Def) {
-			typeOfEntry = reflect.TypeOf(parsedDefinition.Def)
+		if reflect.TypeOf(parsedDefinition.Def) == reflect.TypeOf("") {
+			typeOfEntry = reflect.TypeOf("")
 		}
 
 		castedValue, err := castToTargetType(parsedDefinition.Def, typeOfEntry)

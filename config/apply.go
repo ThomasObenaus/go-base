@@ -74,8 +74,6 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 			return errors.Wrapf(err, "Handling viper workarounds")
 		}
 
-		mappingFunc := mappingFuncs[cfgTag.MapFunName]
-
 		// This handles the case where the type of a field defined in the config annotation does not match
 		// the type of the field that is annotated.
 		// Example:
@@ -85,10 +83,7 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		// Here F1 is of type zerolog.Level (int8) and the defined type in the annotation is string (based on the default value)
 		//
 		// In order to support this situation we have to apply the defined mapping functions.
-		if fieldType != reflect.TypeOf(val) && mappingFunc == nil {
-			return fmt.Errorf("The provided type '%T' and the type of the config field '%v' don't match. In this case a mapping function to map between those types has to be provided but this is missing", val, fieldType)
-		}
-
+		mappingFunc := mappingFuncs[cfgTag.MapFunName]
 		if mappingFunc != nil {
 			mappedValue, err := mappingFunc(val, fieldType)
 			if err != nil {
@@ -100,6 +95,9 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		// cast the parsed default value to the target type
 		castedToTargetTypeIf, err := castToTargetType(val, fieldType)
 		if err != nil {
+			if mappingFunc == nil {
+				return fmt.Errorf("The provided type '%T' and the type of the config field '%v' don't match. In this case a mapping function to map between those types has to be provided but this is missing", val, fieldType)
+			}
 			return errors.Wrapf(err, "Casting to target type")
 		}
 		castedToTargetType := reflect.ValueOf(castedToTargetTypeIf)
