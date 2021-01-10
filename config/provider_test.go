@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -217,4 +219,81 @@ func ExampleNewConfigProvider_structs() {
 	fmt.Printf("field-1='%v', field-2=%v\n", cfg.Field1, cfg.Field2)
 	// Output:
 	// field-1='{the value 22}', field-2=[{value 33} {default of field a 22}]
+}
+
+func ExampleNewConfigProvider_mappingFunc() {
+	type logLevel int8
+	const (
+		ll_trace logLevel = 0
+		ll_debug logLevel = 1
+		ll_info  logLevel = 2
+		ll_warn  logLevel = 3
+		ll_error logLevel = 4
+	)
+
+	// The configuration with the annotations needed in order to define how the config should be filled
+	type myCfg struct {
+		Field1 string   `cfg:"{'name':'field-1','mapfun':'strToUpper','default':'HeLlO wOrLd'}"`
+		Field2 logLevel `cfg:"{'name':'field-2','mapfun':'strToLogLevel'}"`
+	}
+	cfg := myCfg{}
+
+	// Create a provider based on the given config struct
+	provider, err := NewConfigProvider(&cfg, "MyConfig", "MY_APP")
+	if err != nil {
+		panic(err)
+	}
+
+	// Register function to convert each string to upper case
+	err = provider.RegisterMappingFunc("strToUpper", func(rawUntypedValue interface{}, targetType reflect.Type) (interface{}, error) {
+		asStr, ok := rawUntypedValue.(string)
+		if !ok {
+			return nil, fmt.Errorf("Value must be a string")
+		}
+		return strings.ToUpper(asStr), nil
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// Register function to convert the given loglevel as string to the actual loglevel
+	err = provider.RegisterMappingFunc("strToLogLevel", func(rawUntypedValue interface{}, targetType reflect.Type) (interface{}, error) {
+		asStr, ok := rawUntypedValue.(string)
+		if !ok {
+			return nil, fmt.Errorf("Value must be a string")
+		}
+
+		switch asStr {
+		case "trace":
+			return ll_trace, nil
+		case "debug":
+			return ll_debug, nil
+		case "info":
+			return ll_info, nil
+		case "warn":
+			return ll_warn, nil
+		case "error":
+			return ll_error, nil
+		default:
+			return nil, fmt.Errorf("loglevel %s unknown/ not supported", asStr)
+		}
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	// As commandline arguments the parameter 'field-1' is missing, hence its default value will be used (see above)
+	args := []string{
+		"--field-2=warn",
+	}
+
+	// Read the parameters given via commandline into the config struct
+	err = provider.ReadConfig(args)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("field-1='%v', field-2='%v'\n", cfg.Field1, cfg.Field2)
+	// Output:
+	// field-1='HELLO WORLD', field-2='3'
 }

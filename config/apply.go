@@ -83,7 +83,11 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		// Here F1 is of type zerolog.Level (int8) and the defined type in the annotation is string (based on the default value)
 		//
 		// In order to support this situation we have to apply the defined mapping functions.
-		mappingFunc := mappingFuncs[cfgTag.MapFunName]
+		mappingFuncName := cfgTag.MapFunName
+		mappingFunc := mappingFuncs[mappingFuncName]
+		if mappingFunc == nil && len(mappingFuncName) > 0 {
+			return fmt.Errorf("Mapping func '%s' not found", mappingFuncName)
+		}
 		if mappingFunc != nil {
 			mappedValue, err := mappingFunc(val, fieldType)
 			if err != nil {

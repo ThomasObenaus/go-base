@@ -34,6 +34,20 @@ func (m *MockProvider) EXPECT() *MockProviderMockRecorder {
 	return m.recorder
 }
 
+// RegisterMappingFunc mocks base method
+func (m *MockProvider) RegisterMappingFunc(name string, mFunc interfaces.MappingFunc) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterMappingFunc", name, mFunc)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RegisterMappingFunc indicates an expected call of RegisterMappingFunc
+func (mr *MockProviderMockRecorder) RegisterMappingFunc(name, mFunc interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterMappingFunc", reflect.TypeOf((*MockProvider)(nil).RegisterMappingFunc), name, mFunc)
+}
+
 // ReadConfig mocks base method
 func (m *MockProvider) ReadConfig(args []string) error {
 	m.ctrl.T.Helper()

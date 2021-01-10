@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ThomasObenaus/go-base/config/interfaces"
 	mock_provider "github.com/ThomasObenaus/go-base/test/mocks/config"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -85,7 +86,7 @@ func Test_applyConfig_Empty(t *testing.T) {
 	ignoreAllCallsToLogger(mockedProvider)
 
 	// WHEN
-	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{})
+	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{}, map[string]interfaces.MappingFunc{})
 
 	// THEN
 	assert.NoError(t, err)
@@ -130,7 +131,7 @@ func Test_applyConfig(t *testing.T) {
 	mockedProvider.EXPECT().Get("field-5").Return("[{'field-a':33,'field-b':44}]")
 
 	// WHEN
-	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{})
+	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{}, map[string]interfaces.MappingFunc{})
 
 	// THEN
 	assert.NoError(t, err)
@@ -167,7 +168,7 @@ func Test_applyConfig_Fail(t *testing.T) {
 	mockedProviderWrongType.EXPECT().Get("field-1").Return("that is not an int")
 
 	// WHEN
-	errWrongType := applyConfig(mockedProviderWrongType, &myTestCfgWrongType, "", configTag{})
+	errWrongType := applyConfig(mockedProviderWrongType, &myTestCfgWrongType, "", configTag{}, map[string]interfaces.MappingFunc{})
 
 	// THEN
 	assert.Error(t, errWrongType)
@@ -188,7 +189,7 @@ func Test_applyConfig_Fail(t *testing.T) {
 	mockedProviderWrongTypeSliceOfStructs.EXPECT().Get("field-1").Return("that is not an int")
 
 	// WHEN
-	errWrongTypeSliceOfStructs := applyConfig(mockedProviderWrongTypeSliceOfStructs, &myTestCfgWrongTypeSliceOfStructs, "", configTag{})
+	errWrongTypeSliceOfStructs := applyConfig(mockedProviderWrongTypeSliceOfStructs, &myTestCfgWrongTypeSliceOfStructs, "", configTag{}, map[string]interfaces.MappingFunc{})
 
 	// THEN
 	assert.Error(t, errWrongTypeSliceOfStructs)
@@ -203,7 +204,7 @@ func Test_applyConfig_Fail(t *testing.T) {
 	ignoreAllCallsToLogger(mockedProvider)
 
 	// WHEN
-	err := applyConfig(mockedProvider, myTestCfg, "", configTag{})
+	err := applyConfig(mockedProvider, myTestCfg, "", configTag{}, map[string]interfaces.MappingFunc{})
 
 	// THEN
 	assert.Error(t, err)
@@ -231,7 +232,7 @@ func Test_applyConfig_slices(t *testing.T) {
 	mockedProvider.EXPECT().Get("field-3").Return([]string{"c", "b", "a"})
 
 	// WHEN
-	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{})
+	err := applyConfig(mockedProvider, &myTestCfg, "", configTag{}, map[string]interfaces.MappingFunc{})
 
 	// THEN
 	assert.NoError(t, err)
