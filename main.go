@@ -2,19 +2,22 @@ package main
 
 import (
 	"fmt"
+	"reflect"
 
 	"github.com/ThomasObenaus/go-base/config"
 	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/davecgh/go-spew/spew"
+	"github.com/rs/zerolog"
 )
 
+// TODO: Custom function hooks for complex parsing --> example: sokar loglevel (string -> int8/ zerolog.Loglevel)
 // TODO: Fail in case there are duplicate settings (names) configured
-// TODO: Custom function hooks for complex parsing
 // TODO: Check if pointer fields are supported
 // TODO: Add support for shorthand flags
 // TODO: Think about required vs. optional (explicit vs implicit)
 
 type Cfg struct {
+	LogLevel      zerolog.Level  `cfg:"{'name':'log-level','default':'info','mapfun':'strToLogLevel'}"`
 	DryRun        bool           // this should be ignored since its not annotated, but it can be still read using on the usual way
 	Name          string         `cfg:"{'name':'name','desc':'the name of the config'}"`
 	Prio          int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
@@ -39,15 +42,16 @@ type targetSecret struct {
 func main() {
 
 	args := []string{
+		"--log-level=fatal",
 		"--dry-run",
 		"--name=hello",
 		"--prio=23",
 		"--immutable=true",
+		"--numeric-levels=1,2,3",
 		"--config-store.file-path=/devops",
 		"--config-store.target-secret.key=#lsdpo93",
 		"--config-store.target-secret.name=mysecret",
 		"--config-store.target-secret.count=2323",
-		"--numeric-levels=1,2,3",
 		"--target-secrets=[{'name':'mysecret1','key':'sdlfks','count':231},{'name':'mysecret2','key':'sdlfks','count':231}]",
 	}
 
@@ -79,6 +83,15 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 	if err != nil {
 		return Cfg{}, err
 	}
+
+	provider.RegisterMappingFunc("strToLogLevel", func(rawUntypedValue interface{}, targetType reflect.Type) (interface{}, error) {
+		asStr, ok := rawUntypedValue.(string)
+		if !ok {
+			return nil, fmt.Errorf("Expected a string. Type '%T' is not supported", rawUntypedValue)
+		}
+		return zerolog.ParseLevel(asStr)
+	})
+
 	err = provider.ReadConfig(args)
 	if err != nil {
 		return Cfg{}, err
