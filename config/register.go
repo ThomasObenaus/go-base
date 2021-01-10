@@ -45,9 +45,7 @@ func (p *providerImpl) registerAndParseFlags(args []string) error {
 		}
 		return err
 	}
-	p.Viper.BindPFlags(p.pFlagSet)
-
-	return nil
+	return p.Viper.BindPFlags(p.pFlagSet)
 }
 
 func (p *providerImpl) setDefaults() error {
