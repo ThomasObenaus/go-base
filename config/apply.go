@@ -35,7 +35,7 @@ func getTargetTypeAndValue(target interface{}) (reflect.Type, reflect.Value, err
 }
 
 // applyConfig applies the config that is stored in the given provider. The config will be used to fill the given target type.
-func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentType string, parent configTag) error {
+func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentType string, parent configTag, mappingFuncs map[string]interfaces.MappingFunc) error {
 
 	targetType, targetValue, err := getTargetTypeAndValue(target)
 	if err != nil {
@@ -52,7 +52,7 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		// handling of non primitives (stucts)
 		if !isPrimitive {
 			fieldValueIf := fieldValue.Addr().Interface()
-			if err := applyConfig(provider, fieldValueIf, nameOfParentType, cfgTag); err != nil {
+			if err := applyConfig(provider, fieldValueIf, nameOfParentType, cfgTag, mappingFuncs); err != nil {
 				return errors.Wrap(err, "Applying non primitive")
 			}
 			provider.Log(interfaces.LogLevel_Debug, "%s applied non primitive %v\n", logPrefix, fieldValueIf)
@@ -72,6 +72,29 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		val, err := handleViperWorkarounds(valueFromViper, fieldType)
 		if err != nil {
 			return errors.Wrapf(err, "Handling viper workarounds")
+		}
+
+		mappingFunc := mappingFuncs[cfgTag.MapFunName]
+
+		// This handles the case where the type of a field defined in the config annotation does not match
+		// the type of the field that is annotated.
+		// Example:
+		// type cfg struct {
+		// 	F1 zerolog.Level `cfg:"{'name':'logl','default':'info'}"`
+		// }
+		// Here F1 is of type zerolog.Level (int8) and the defined type in the annotation is string (based on the default value)
+		//
+		// In order to support this situation we have to apply the defined mapping functions.
+		if fieldType != reflect.TypeOf(val) && mappingFunc == nil {
+			return fmt.Errorf("The provided type '%T' and the type of the config field '%v' don't match. In this case a mapping function to map between those types has to be provided but this is missing", val, fieldType)
+		}
+
+		if mappingFunc != nil {
+			mappedValue, err := mappingFunc(val, fieldType)
+			if err != nil {
+				return errors.Wrapf(err, "Applying mapping function '%v' (%s)", mappingFunc, cfgTag.MapFunName)
+			}
+			val = mappedValue
 		}
 
 		// cast the parsed default value to the target type

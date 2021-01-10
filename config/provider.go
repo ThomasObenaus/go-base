@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/pkg/errors"
@@ -35,6 +36,8 @@ type providerImpl struct {
 	configTarget interface{}
 
 	logger interfaces.LoggerFunc
+
+	mappingFuncRegistry map[string]interfaces.MappingFunc
 }
 
 // ProviderOption represents an option for the Provider
@@ -96,14 +99,15 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 func NewConfigProvider(target interface{}, configName, envPrefix string, options ...ProviderOption) (interfaces.Provider, error) {
 	defaultConfigFileEntry := NewEntry("config-file", "Specifies the full path and name of the configuration file", Bind(true, true))
 	provider := &providerImpl{
-		configEntries:   make([]Entry, 0),
-		configName:      configName,
-		envPrefix:       envPrefix,
-		pFlagSet:        pflag.NewFlagSet(configName, pflag.ContinueOnError),
-		Viper:           viper.New(),
-		configFileEntry: defaultConfigFileEntry,
-		configTarget:    target,
-		logger:          interfaces.NoLogging,
+		configEntries:       make([]Entry, 0),
+		configName:          configName,
+		envPrefix:           envPrefix,
+		pFlagSet:            pflag.NewFlagSet(configName, pflag.ContinueOnError),
+		Viper:               viper.New(),
+		configFileEntry:     defaultConfigFileEntry,
+		configTarget:        target,
+		logger:              interfaces.NoLogging,
+		mappingFuncRegistry: make(map[string]interfaces.MappingFunc),
 	}
 
 	// apply the options
@@ -141,4 +145,23 @@ func (p *providerImpl) Log(lvl interfaces.LogLevel, formatString string, a ...in
 
 func (p *providerImpl) String() string {
 	return fmt.Sprintf("%s: %v", p.configName, p.AllSettings())
+}
+
+func (p *providerImpl) RegisterMappingFunc(name string, mFunc interfaces.MappingFunc) error {
+	name = strings.TrimSpace(name)
+	if len(name) == 0 {
+		return fmt.Errorf("Name for the mapping function must be provided")
+	}
+
+	if mFunc == nil {
+		return fmt.Errorf("Mapping function must not be nil")
+	}
+
+	if old, ok := p.mappingFuncRegistry[name]; ok {
+		p.logger(interfaces.LogLevel_Warn, "Overwriting mapping function '%v' with '%v' because both were registered with the same name '%s'", old, mFunc, name)
+	}
+
+	p.mappingFuncRegistry[name] = mFunc
+
+	return nil
 }
