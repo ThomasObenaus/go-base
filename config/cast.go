@@ -217,3 +217,92 @@ func handleViperWorkarounds(val interface{}, targetType reflect.Type) (interface
 	}
 	return parseStringContainingSliceOfX(valueAsString, targetType)
 }
+
+// handleYamlElementListInput ensures that the value is coming in as an yaml element list are in the right format because usually they are given as []interface{}.
+// Internally they are converted to a json string.
+func handleYamlElementListInput(val interface{}, targetType reflect.Type) (interface{}, error) {
+	if val == nil {
+		return val, nil
+	}
+	typeOfValue := reflect.TypeOf(val)
+
+	// do nothing if the target type is no slice
+	if targetType.Kind() != reflect.Slice {
+		return val, nil
+	}
+	// do nothing if the given type is no slice
+	if typeOfValue.Kind() != reflect.Slice {
+		return val, nil
+	}
+
+	targetTypeElementKind := targetType.Elem().Kind()
+	valueTypeElementKind := typeOfValue.Elem().Kind()
+	// do nothing if the element types match
+	if targetTypeElementKind == valueTypeElementKind {
+		return val, nil
+	}
+
+	return cfgValueToStructuredString(val)
+}
+
+// cfgValueToStructuredString handles structured config values that are either valid json or yaml element lists.
+// The function returns a json string that represents the input data.
+func cfgValueToStructuredString(cfgValue interface{}) (string, error) {
+	cfgValueAsStr := ""
+
+	// We have to handle two cases.
+	// 1. The config parameter was provided as one string (e.g. via env-parameter or via command-line).
+	// 2. The config parameter was provided via yaml as a list of objects (will be type []interface{})
+	switch typedIface := cfgValue.(type) {
+	case string:
+		// This handles the case that config parameter was provided as one string.
+		// example [{'key1':'value1','key2':'value2'}]
+		cfgValueAsStr = cfgValue.(string)
+	case []interface{}:
+		// This handles the case that config parameter was provided via yaml as a list of objects.
+		return yamlElementListToJsonString(typedIface)
+	default:
+		return "", fmt.Errorf("Unable to handle parameter of type %T", cfgValue)
+	}
+	return cfgValueAsStr, nil
+}
+
+// yamlElementListToJsonString converts contents of a yaml list into a json string
+func yamlElementListToJsonString(yamlData []interface{}) (string, error) {
+	// This handles the case that config parameter was provided via yaml as a list of objects.
+	// example :
+	// my-config:
+	// - key1: "value1"
+	//   key2: 111
+	// - key1: "value2"
+	//   key2: 222
+	pairList := make([]string, 0)
+
+	for _, element := range yamlData {
+		pair := ""
+		switch castedElement := element.(type) {
+		case map[string]string:
+			internalPair, err := json.Marshal(castedElement)
+			if err != nil {
+				return "", errors.Wrap(err, "Handling map[string]string")
+			}
+			pair = string(internalPair)
+		case map[string]interface{}, map[interface{}]interface{}:
+			cElement, err := cast.ToStringMapE(element)
+			if err != nil {
+				return "", errors.Wrap(err, "Casting map[string]interface{}")
+			}
+			internalPair, err := json.Marshal(cElement)
+			if err != nil {
+				return "", errors.Wrap(err, "Handling map[string]interface{}")
+			}
+			pair = string(internalPair)
+		default:
+			return "", fmt.Errorf("Unable to handle element %#v of type %T", element, element)
+		}
+
+		pairList = append(pairList, pair)
+	}
+	// concatenate all elements to [{'key1':'value1','key2':'value2'}]
+	return fmt.Sprintf(`[%s]`, strings.Join(pairList, ",")), nil
+}

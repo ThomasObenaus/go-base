@@ -322,3 +322,82 @@ func Test_handleViperWorkarounds(t *testing.T) {
 	assert.Error(t, errDurationSlice)
 	assert.Nil(t, valDurationSlice)
 }
+
+func Test_yamlElementListToJsonString(t *testing.T) {
+	// GIVEN
+	element1_1 := map[string]interface{}{"name": "hans", "age": 12}
+	element1_2 := map[string]interface{}{"name": "benno", "age": 22}
+	elements1 := []interface{}{element1_1, element1_2}
+
+	element2_1 := map[string]string{"firstname": "hans", "lastname": "wurst"}
+	element2_2 := map[string]string{"firstname": "benno", "lastname": "benni"}
+	elements2 := []interface{}{element2_1, element2_2}
+
+	elements3 := []interface{}{1, 2, 3}
+
+	// WHEN
+	str1, err1 := yamlElementListToJsonString(elements1)
+	str2, err2 := yamlElementListToJsonString(elements2)
+	_, err3 := yamlElementListToJsonString(elements3)
+	str4, err4 := yamlElementListToJsonString(nil)
+
+	// THEN
+	assert.NoError(t, err1)
+	assert.Equal(t, `[{"age":12,"name":"hans"},{"age":22,"name":"benno"}]`, str1)
+	assert.NoError(t, err2)
+	assert.Equal(t, `[{"firstname":"hans","lastname":"wurst"},{"firstname":"benno","lastname":"benni"}]`, str2)
+	assert.Error(t, err3)
+	assert.NoError(t, err4)
+	assert.Equal(t, `[]`, str4)
+}
+
+func Test_cfgValueToStructuredString(t *testing.T) {
+	// GIVEN
+	element1_1 := map[string]interface{}{"name": "hans", "age": 12}
+	element1_2 := map[string]interface{}{"name": "benno", "age": 22}
+	elements1 := []interface{}{element1_1, element1_2}
+
+	// WHEN
+	str1, err1 := cfgValueToStructuredString(elements1)
+	_, err2 := cfgValueToStructuredString(162)
+	str3, err3 := cfgValueToStructuredString("hello world")
+
+	// THEN
+	assert.NoError(t, err1)
+	assert.Equal(t, `[{"age":12,"name":"hans"},{"age":22,"name":"benno"}]`, str1)
+	assert.Error(t, err2)
+	assert.NoError(t, err3)
+	assert.Equal(t, "hello world", str3)
+}
+
+func Test_handleYamlElementListInput(t *testing.T) {
+	// GIVEN
+	element1_1 := map[string]interface{}{"name": "hans", "age": 12}
+	element1_2 := map[string]interface{}{"name": "benno", "age": 22}
+	elements1 := []interface{}{element1_1, element1_2}
+
+	type myStruct struct {
+		Name string
+		Age  int
+	}
+
+	elements2 := []myStruct{myStruct{}, myStruct{}}
+
+	// WHEN
+	str1, err1 := handleYamlElementListInput(elements1, reflect.TypeOf([]myStruct{}))
+	str2, err2 := handleYamlElementListInput(element1_1, reflect.TypeOf(myStruct{}))
+	str3, err3 := handleYamlElementListInput(element1_1, reflect.TypeOf([]myStruct{}))
+	_, err4 := handleYamlElementListInput(nil, reflect.TypeOf(myStruct{}))
+	str5, err5 := handleYamlElementListInput(elements2, reflect.TypeOf([]myStruct{}))
+
+	// THEN
+	assert.NoError(t, err1)
+	assert.Equal(t, `[{"age":12,"name":"hans"},{"age":22,"name":"benno"}]`, str1)
+	assert.NoError(t, err2)
+	assert.Equal(t, element1_1, str2)
+	assert.NoError(t, err3)
+	assert.Equal(t, element1_1, str3)
+	assert.NoError(t, err4)
+	assert.NoError(t, err5)
+	assert.Equal(t, elements2, str5)
+}

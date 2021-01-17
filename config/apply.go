@@ -69,6 +69,14 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		}
 
 		valueFromViper := provider.Get(cfgTag.Name)
+
+		// Handle the case that the values are provied in a []interface{}. This is the case the data comes from yaml.
+		// There lists are treated as []interface{} (which then can be []map[string]interface{}, []map[string]string, ...)
+		valueFromViper, err := handleYamlElementListInput(valueFromViper, fieldType)
+		if err != nil {
+			return errors.Wrapf(err, "Handling yaml input")
+		}
+
 		val, err := handleViperWorkarounds(valueFromViper, fieldType)
 		if err != nil {
 			return errors.Wrapf(err, "Handling viper workarounds")
