@@ -165,3 +165,12 @@ func (p *providerImpl) RegisterMappingFunc(name string, mFunc interfaces.Mapping
 
 	return nil
 }
+
+func (p *providerImpl) Usage() string {
+	entriesAsString := make([]string, 0)
+
+	for _, entry := range p.configEntries {
+		entriesAsString = append(entriesAsString, entry.String())
+	}
+	return strings.Join(entriesAsString, "\n")
+}

@@ -65,6 +65,7 @@ type Provider interface {
 	IsSet(key string) bool
 	String() string
 	Log(lvl LogLevel, formatString string, a ...interface{})
+	Usage() string
 }
 
 /*

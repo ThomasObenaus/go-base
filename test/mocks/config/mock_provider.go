@@ -358,3 +358,17 @@ func (mr *MockProviderMockRecorder) Log(lvl, formatString interface{}, a ...inte
 	varargs := append([]interface{}{lvl, formatString}, a...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Log", reflect.TypeOf((*MockProvider)(nil).Log), varargs...)
 }
+
+// Usage mocks base method
+func (m *MockProvider) Usage() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Usage")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Usage indicates an expected call of Usage
+func (mr *MockProviderMockRecorder) Usage() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Usage", reflect.TypeOf((*MockProvider)(nil).Usage))
+}
