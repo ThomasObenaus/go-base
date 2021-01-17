@@ -115,6 +115,8 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		flagSet.BoolP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case time.Duration:
 		flagSet.DurationP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
+	case float32:
+		flagSet.Float32P(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case float64:
 		flagSet.Float64P(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case []bool:
