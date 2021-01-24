@@ -291,12 +291,13 @@ func Test_handleViperWorkarounds(t *testing.T) {
 	}
 
 	// WHEN
-	valNil, errNil := handleViperWorkarounds(nil, reflect.TypeOf(0))
-	valNoString, errNoString := handleViperWorkarounds(1, reflect.TypeOf(0))
-	valNoSlice, errNoSlice := handleViperWorkarounds("1", reflect.TypeOf("0"))
-	valBoolSlice, errBoolSlice := handleViperWorkarounds("[true,false,true]", reflect.TypeOf([]bool{}))
-	valMapSlice, errMapSlice := handleViperWorkarounds(`[{"field1":"hello 1","field2":11},{"field1":"hello 2","field2":22}]`, reflect.TypeOf([]my{}))
-	valDurationSlice, errDurationSlice := handleViperWorkarounds("", reflect.TypeOf([]time.Duration{}))
+	valNil, errNil := handleViperWorkarounds(nil, reflect.TypeOf(0), false)
+	valNoString, errNoString := handleViperWorkarounds(1, reflect.TypeOf(0), false)
+	valNoSlice, errNoSlice := handleViperWorkarounds("1", reflect.TypeOf("0"), false)
+	valBoolSlice, errBoolSlice := handleViperWorkarounds("[true,false,true]", reflect.TypeOf([]bool{}), false)
+	valMapSlice, errMapSlice := handleViperWorkarounds(`[{"field1":"hello 1","field2":11},{"field1":"hello 2","field2":22}]`, reflect.TypeOf([]my{}), false)
+	valDurationSlice, errDurationSlice := handleViperWorkarounds("", reflect.TypeOf([]time.Duration{}), false)
+	valHasMapfunc, errHasMapfunc := handleViperWorkarounds("1", reflect.TypeOf(0), true)
 
 	// THEN
 	assert.NoError(t, errNil)
@@ -321,6 +322,8 @@ func Test_handleViperWorkarounds(t *testing.T) {
 	}, mapSlice)
 	assert.Error(t, errDurationSlice)
 	assert.Nil(t, valDurationSlice)
+	assert.NoError(t, errHasMapfunc)
+	assert.Equal(t, "1", valHasMapfunc)
 }
 
 func Test_yamlElementListToJsonString(t *testing.T) {

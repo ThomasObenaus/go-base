@@ -77,7 +77,7 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 		serviceAbbreviation,
 		serviceAbbreviation,
 		config.CustomConfigEntries(configEntries),
-		config.Logger(interfaces.InfoLogger),
+		config.Logger(interfaces.DebugLogger),
 	)
 	if err != nil {
 		return Cfg{}, err

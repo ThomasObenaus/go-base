@@ -194,8 +194,12 @@ func parseStringContainingSliceOfX(sliceString string, targetSliceType reflect.T
 
 // handleViperWorkarounds viper does not handle all types correctly. e.g. a slice of structs or booleans is not supported and just returned as
 // a jsonstring. handleViperWorkarounds casts those jsonstrings into the correct golang types.
-func handleViperWorkarounds(val interface{}, targetType reflect.Type) (interface{}, error) {
+func handleViperWorkarounds(val interface{}, targetType reflect.Type, hasMappingfunc bool) (interface{}, error) {
 	if val == nil {
+		return val, nil
+	}
+
+	if hasMappingfunc {
 		return val, nil
 	}
 

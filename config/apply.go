@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"reflect"
+	"runtime"
 
 	"github.com/ThomasObenaus/go-base/config/interfaces"
 	"github.com/pkg/errors"
@@ -76,8 +77,10 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		if err != nil {
 			return errors.Wrapf(err, "Handling yaml input")
 		}
+		mappingFuncName := cfgTag.MapFunName
+		hasMappingFunc := len(mappingFuncName) > 0
 
-		val, err := handleViperWorkarounds(valueFromViper, fieldType)
+		val, err := handleViperWorkarounds(valueFromViper, fieldType, hasMappingFunc)
 		if err != nil {
 			return errors.Wrapf(err, "Handling viper workarounds")
 		}
@@ -91,15 +94,16 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 		// Here F1 is of type zerolog.Level (int8) and the defined type in the annotation is string (based on the default value)
 		//
 		// In order to support this situation we have to apply the defined mapping functions.
-		mappingFuncName := cfgTag.MapFunName
 		mappingFunc := mappingFuncs[mappingFuncName]
-		if mappingFunc == nil && len(mappingFuncName) > 0 {
+		resolvedMappingFuncName := runtime.FuncForPC(reflect.ValueOf(mappingFunc).Pointer()).Name()
+		if mappingFunc == nil && hasMappingFunc {
 			return fmt.Errorf("Mapping func '%s' not found", mappingFuncName)
 		}
 		if mappingFunc != nil {
+			provider.Log(interfaces.LogLevel_Debug, "%s apply mapping function '%s' (%s())", logPrefix, cfgTag.MapFunName, resolvedMappingFuncName)
 			mappedValue, err := mappingFunc(val, fieldType)
 			if err != nil {
-				return errors.Wrapf(err, "Applying mapping function '%v' (%s)", mappingFunc, cfgTag.MapFunName)
+				return errors.Wrapf(err, "Applying mapping function '%s' (%s())", cfgTag.MapFunName, resolvedMappingFuncName)
 			}
 			val = mappedValue
 		}
