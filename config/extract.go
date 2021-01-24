@@ -30,6 +30,10 @@ func (e configTag) IsRequired() bool {
 	return e.Def == nil
 }
 
+func (e configTag) HasMapfunc() bool {
+	return len(e.MapFunName) > 0
+}
+
 // parseConfigTagDefinition parses a definition like
 // 	`cfg:"{'name':'<name of the config>','desc':'<description>','default':<default value>,'mapfun':<name of the mapping function>}"`
 // to a configTag
@@ -127,8 +131,14 @@ func CreateEntriesFromStruct(target interface{}, logger interfaces.LoggerFunc) (
 		return nil, err
 	}
 	for _, configTag := range configTags {
+		desiredType := configTag.desiredType
+		// Use string as desired type in case a mapping function is defined.
+		if configTag.HasMapfunc() {
+			desiredType = reflect.TypeOf("")
+		}
+
 		// create and append the new config entry
-		entry := NewEntry(configTag.Name, configTag.Description, Default(configTag.Def))
+		entry := NewEntry(configTag.Name, configTag.Description, Default(configTag.Def), DesiredType(desiredType))
 		entries = append(entries, entry)
 		logger(interfaces.LogLevel_Info, "Added new config new entry=%v\n", entry)
 	}
