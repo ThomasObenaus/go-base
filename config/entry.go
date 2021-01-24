@@ -15,6 +15,7 @@ type Entry struct {
 	name         string
 	usage        string
 	defaultValue interface{}
+	desiredType  reflect.Type
 
 	bindFlag      bool
 	flagShortName string
@@ -47,6 +48,13 @@ func Bind(flag, env bool) EntryOption {
 	}
 }
 
+// DesiredType sets the desired type of this entry
+func DesiredType(t reflect.Type) EntryOption {
+	return func(e *Entry) {
+		e.desiredType = t
+	}
+}
+
 // NewEntry creates a new Entry that is available as flag, config file entry and environment variable
 func NewEntry(name, usage string, options ...EntryOption) Entry {
 	entry := Entry{
@@ -56,11 +64,21 @@ func NewEntry(name, usage string, options ...EntryOption) Entry {
 		defaultValue:  nil,
 		bindFlag:      true,
 		bindEnv:       true,
+		desiredType:   nil,
 	}
 
 	// apply the options
 	for _, opt := range options {
 		opt(&entry)
+	}
+
+	// try the best to deduce the desired type
+	if entry.desiredType == nil {
+		if entry.defaultValue != nil {
+			entry.desiredType = reflect.TypeOf(entry.defaultValue)
+		} else {
+			entry.desiredType = reflect.TypeOf("")
+		}
 	}
 
 	return entry
@@ -103,13 +121,19 @@ func registerFlag(flagSet *pflag.FlagSet, entry Entry) error {
 		return fmt.Errorf("Name is missing")
 	}
 
-	// no default value availabl -> we can't deduce the type
-	if entry.defaultValue == nil {
-		flagSet.StringP(entry.name, entry.flagShortName, "", entry.usage)
-		return nil
+	valueDesiredType := entry.defaultValue
+
+	if valueDesiredType == nil {
+		valueType := reflect.New(entry.desiredType)
+		if valueType.Kind() != reflect.Ptr {
+			return fmt.Errorf("Failed deducing desired type for entry %v", entry)
+		}
+		valueDesiredType = valueType.Elem().Interface()
 	}
 
-	switch castedDefaultValue := entry.defaultValue.(type) {
+	// TODO: Regard default value and set it when registering the flag
+
+	switch castedDefaultValue := valueDesiredType.(type) {
 	case string:
 		flagSet.StringP(entry.name, entry.flagShortName, castedDefaultValue, entry.usage)
 	case uint:

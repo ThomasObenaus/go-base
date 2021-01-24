@@ -339,3 +339,33 @@ func ExampleNewConfigProvider_mappingFunc() {
 	// Output:
 	// field-1='HELLO WORLD', field-2='3'
 }
+
+func ExampleNewConfigProvider_usage() {
+
+	// The configuration with the annotations needed in order to define how the config should be filled
+	type myCfg struct {
+		//Field1 string `cfg:"{'name':'field-1','desc':'This is field 1','default':'default value for field 1'}"`
+		Field2 int `cfg:"{'name':'field-2','desc':'This is field 2. It is a required field since no default values is defined.'}"`
+	}
+	cfg := myCfg{}
+
+	// Create a provider based on the given config struct
+	provider, err := NewConfigProvider(&cfg, "MyConfig", "MY_APP")
+	if err != nil {
+		panic(err)
+	}
+
+	args := []string{"--field-2=22"}
+
+	// Read the parameters given via commandline into the config struct
+	err = provider.ReadConfig(args)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Print(provider.Usage())
+	// Output:
+	//--field-2 (-) [required]
+	//	default: n/a
+	//	desc: This is field 2. It is a required field since no default values is defined.
+}

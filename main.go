@@ -18,7 +18,7 @@ import (
 type Cfg struct {
 	DryRun        bool           // this should be ignored since its not annotated, but it can be still read using on the usual way
 	Name          string         `cfg:"{'name':'name','desc':'the name of the config'}"`
-	Prio          int            `cfg:"{'name':'prio','desc':'the prio','default':0}"`
+	Prio          int            `cfg:"{'name':'prio','desc':'the prio'}"`
 	Immutable     bool           `cfg:"{'name':'immutable','desc':'can be modified or not','default':false}"`
 	NumericLevels []int          `cfg:"{'name':'numeric-levels','desc':'allowed levels','default':[1,2]}"`
 	Levels        []string       `cfg:"{'name':'levels','desc':'allowed levels','default':['a','b']}"`

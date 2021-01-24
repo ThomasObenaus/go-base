@@ -87,8 +87,9 @@ func Test_RegisterEnv_OK(t *testing.T) {
 	require.NotNil(t, vp)
 
 	cfgE := Entry{
-		name:    "flag",
-		bindEnv: true,
+		name:        "flag",
+		bindEnv:     true,
+		desiredType: reflect.TypeOf(""),
 	}
 	err := registerEnv(vp, envPrefix, cfgE)
 	assert.NoError(t, err)
@@ -97,8 +98,9 @@ func Test_RegisterEnv_OK(t *testing.T) {
 	assert.Equal(t, "test1", vp.Get(cfgE.name))
 
 	cfgE = Entry{
-		name:    "flag",
-		bindEnv: true,
+		name:        "flag",
+		bindEnv:     true,
+		desiredType: reflect.TypeOf(""),
 	}
 	err = registerEnv(vp, envPrefix, cfgE)
 	assert.NoError(t, err)
@@ -160,9 +162,10 @@ func Test_RegisterFlag_Ok(t *testing.T) {
 		defaultValue:  "default",
 		usage:         "The default value",
 		flagShortName: "a",
+		desiredType:   reflect.TypeOf(""),
 	}
 	err := registerFlag(flagSet, cfgE)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	flag := flagSet.Lookup(cfgE.name)
 	require.NotNil(t, flag)
 	assert.Equal(t, cfgE.defaultValue.(string), flag.DefValue)

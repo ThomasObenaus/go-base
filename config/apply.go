@@ -108,7 +108,7 @@ func applyConfig(provider interfaces.Provider, target interface{}, nameOfParentT
 			val = mappedValue
 		}
 
-		// cast the parsed default value to the target type
+		// cast the parsed value to the target type
 		castedToTargetTypeIf, err := castToTargetType(val, fieldType)
 		if err != nil {
 			if mappingFunc == nil {
