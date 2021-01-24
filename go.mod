@@ -13,5 +13,5 @@ require (
 	github.com/spf13/viper v1.6.1
 	github.com/stretchr/testify v1.4.0
 	go.uber.org/atomic v1.5.1
-	golang.org/x/tools v0.0.0-20210108195828-e2f9c7f1fc8e // indirect
+	golang.org/x/tools v0.1.0 // indirect
 )

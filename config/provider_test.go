@@ -20,6 +20,24 @@ func toProviderImpl(t *testing.T, pIf interfaces.Provider) *providerImpl {
 	return p
 }
 
+func Test_wrap(t *testing.T) {
+
+	// GIVEN
+	txt1 := "Hello World"
+	txt2 := "Hello"
+	txt3 := "Hello     World      , hello world   "
+
+	// WHEN
+	wrapped1 := wrapText(txt1, 5, "\n")
+	wrapped2 := wrapText(txt2, 5, "\n")
+	wrapped3 := wrapText(txt3, 5, "\n")
+
+	// THEN
+	assert.Equal(t, "Hello\nWorld", wrapped1)
+	assert.Equal(t, "Hello", wrapped2)
+	assert.Equal(t, "Hello\nWorld\n, hel\nlo wo\nrld", wrapped3)
+}
+
 func Test_NewProvider(t *testing.T) {
 
 	// GIVEN

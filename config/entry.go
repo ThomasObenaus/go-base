@@ -75,6 +75,11 @@ func (e Entry) Name() string {
 	return e.name
 }
 
+// IsRequired returns true in case no default value is given
+func (e Entry) IsRequired() bool {
+	return e.defaultValue == nil
+}
+
 func checkViper(vp *viper.Viper, entry Entry) error {
 	if vp == nil {
 		return fmt.Errorf("Viper is nil")

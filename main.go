@@ -93,6 +93,9 @@ func New(args []string, serviceAbbreviation string) (Cfg, error) {
 
 	err = provider.ReadConfig(args)
 	if err != nil {
+
+		fmt.Print(provider.Usage())
+
 		return Cfg{}, err
 	}
 

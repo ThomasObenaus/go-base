@@ -169,8 +169,60 @@ func (p *providerImpl) RegisterMappingFunc(name string, mFunc interfaces.Mapping
 func (p *providerImpl) Usage() string {
 	entriesAsString := make([]string, 0)
 
+	maxLen := 0
 	for _, entry := range p.configEntries {
-		entriesAsString = append(entriesAsString, entry.String())
+		entryDefinition := entryDefinitionAsString(entry)
+		if len(entryDefinition) > maxLen {
+			maxLen = len(entryDefinition)
+		}
+	}
+
+	for _, entry := range p.configEntries {
+		entryDefinition := entryDefinitionAsString(entry)
+		formatStr := fmt.Sprintf("%%-%ds", maxLen)
+		entryStr := fmt.Sprintf(formatStr, entryDefinition)
+		entriesAsString = append(entriesAsString, entryStr)
+
+		// default
+		defaultStr := "n/a"
+		if entry.defaultValue != nil {
+			defaultStr = fmt.Sprintf("%v (type=%T)", entry.defaultValue, entry.defaultValue)
+		}
+		entriesAsString = append(entriesAsString, fmt.Sprintf("\tdefault: %s", defaultStr))
+
+		// usage
+		usageStr := wrapText(fmt.Sprintf("desc: %s", entry.usage), 140, "\n\t")
+		entriesAsString = append(entriesAsString, fmt.Sprintf("\t%s", usageStr))
+		entriesAsString = append(entriesAsString, "")
 	}
 	return strings.Join(entriesAsString, "\n")
+}
+
+func entryDefinitionAsString(entry Entry) string {
+	reqStr := ""
+	if entry.IsRequired() {
+		reqStr = " [required]"
+	}
+	return fmt.Sprintf("--%s (-%s)%s", entry.Name(), entry.flagShortName, reqStr)
+}
+
+func wrapText(text string, afterNChars int, wrapChar string) string {
+
+	if len(text) <= afterNChars {
+		return text
+	}
+
+	parts := []string{}
+	for len(text) > afterNChars {
+		text = strings.TrimSpace(text)
+		parts = append(parts, text[:(afterNChars)])
+		text = text[afterNChars:]
+		text = strings.TrimSpace(text)
+	}
+
+	if len(text) > 0 {
+		parts = append(parts, text)
+	}
+
+	return strings.Join(parts, wrapChar)
 }
