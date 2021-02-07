@@ -47,6 +47,26 @@ func NewProvider(configEntries []Entry, configName, envPrefix string, options ..
 	}
 }
 
+// NewConfigProvider creates a new config provider that is able to parse the command line, env vars and config file based
+// on the given entries. This config provider automatically generates the needed config entries and fills the given config target
+// based on the annotations on this struct.
+// In case custom config entries should be used beside the annotations on the struct one can define them via
+//	CustomConfigEntries(customEntries)`
+// e.g.
+//
+//	customEntries:=[]Entry{
+//	// fill entries here
+//	}
+//	provider,err := NewConfigProvider(&myConfig,"my-config","MY_APP",CustomConfigEntries(customEntries))
+func NewConfigProvider(target interface{}, configName, envPrefix string, options ...ProviderOption) (Provider, error) {
+	optionsT := pOptsToGConfPOpts(options)
+	provider, err := gconf.NewConfigProvider(target, configName, envPrefix, optionsT...)
+	if err != nil {
+		return Provider{}, err
+	}
+	return Provider{Provider: provider}, nil
+}
+
 func (p Provider) String() string {
 	return p.Provider.String()
 }
