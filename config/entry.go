@@ -74,6 +74,26 @@ func (e Entry) Name() string {
 	return e.name
 }
 
+// Usage provides the usage
+func (e Entry) Usage() string {
+	return e.usage
+}
+
+// Usage provides the short name
+func (e Entry) ShortName() string {
+	return e.flagShortName
+}
+
+// DefaultValue provides the default value
+func (e Entry) DefaultValue() interface{} {
+	return e.defaultValue
+}
+
+// Bind provides the bind settings
+func (e Entry) Bind() (flag, env bool) {
+	return e.bindFlag, e.bindEnv
+}
+
 func checkViper(vp *viper.Viper, entry Entry) error {
 	if vp == nil {
 		return fmt.Errorf("Viper is nil")
