@@ -20,13 +20,7 @@ func Test_NewProvider(t *testing.T) {
 	err := provider.ReadConfig(args)
 
 	// THEN
-	assert.NotNil(t, provider.pFlagSet)
-	assert.NotNil(t, provider.Viper)
-	assert.Equal(t, envPrefix, provider.envPrefix)
 	assert.NoError(t, err)
-	assert.Len(t, provider.AllKeys(), 1)
-	assert.Equal(t, "config-file", provider.configFileEntry.name)
-	assert.Empty(t, provider.configFileEntry.flagShortName)
 }
 
 func Test_NewProviderOverrideCfgFile(t *testing.T) {
@@ -35,16 +29,16 @@ func Test_NewProviderOverrideCfgFile(t *testing.T) {
 	var configEntries []Entry
 	configName := "testcfg"
 	envPrefix := "TST"
+	cfgFileLocation := "../test/data/config.yaml"
 
 	// WHEN
 	provider := NewProvider(configEntries, configName, envPrefix, CfgFile("cfg-f", "f"))
+	err := provider.ReadConfig([]string{"-f=" + cfgFileLocation})
 
 	// THEN
-	assert.NotNil(t, provider.pFlagSet)
-	assert.NotNil(t, provider.Viper)
-	assert.Equal(t, envPrefix, provider.envPrefix)
-	assert.Equal(t, "cfg-f", provider.configFileEntry.name)
-	assert.Equal(t, "f", provider.configFileEntry.flagShortName)
+	assert.NoError(t, err)
+	cfgFileName := provider.GetString("cfg-f")
+	assert.Equal(t, cfgFileLocation, cfgFileName)
 }
 
 func ExampleNewProvider() {
