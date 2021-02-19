@@ -26,7 +26,7 @@ gen-mocks: sep ## Generates test doubles (mocks).
 	@mockgen -source=shutdown/stopable.go -destination test/mocks/shutdown/mock_stopable.go
 
 tools: sep ## Installs needed tools
-	@echo "--> Install needed tools."
+	@echo "--> Install needed tools"
 	@go get golang.org/x/tools/cmd/cover
 	@go get github.com/mattn/goveralls
 
