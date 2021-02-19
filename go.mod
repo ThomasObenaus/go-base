@@ -3,7 +3,7 @@ module github.com/ThomasObenaus/go-base
 go 1.13
 
 require (
-	github.com/ThomasObenaus/go-conf v0.0.2
+	github.com/ThomasObenaus/go-conf v0.0.3
 	github.com/golang/mock v1.4.4
 	github.com/mattn/goveralls v0.0.7 // indirect
 	github.com/rs/zerolog v1.20.0
