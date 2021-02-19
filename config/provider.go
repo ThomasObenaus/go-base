@@ -15,6 +15,7 @@ type Provider struct {
 type providerCfg struct {
 	parameterName      string
 	shortParameterName string
+	logger             LoggerFunc
 }
 
 // ProviderOption represents an option for the Provider
@@ -25,6 +26,13 @@ func CfgFile(parameterName, shortParameterName string) ProviderOption {
 	return func(cfg *providerCfg) {
 		cfg.parameterName = parameterName
 		cfg.shortParameterName = shortParameterName
+	}
+}
+
+// Logger can be used to specify a custom logger
+func Logger(logger LoggerFunc) ProviderOption {
+	return func(cfg *providerCfg) {
+		cfg.logger = logger
 	}
 }
 
@@ -91,5 +99,34 @@ func pOptsToGConfPOpts(opts []ProviderOption) []gconf.ProviderOption {
 	if len(pCfg.parameterName) > 0 && len(pCfg.shortParameterName) > 0 {
 		pOpts = append(pOpts, gconf.CfgFile(pCfg.parameterName, pCfg.shortParameterName))
 	}
+	if pCfg.logger != nil {
+		logger := toGoConfLogger(pCfg.logger)
+		pOpts = append(pOpts, gconf.Logger(logger))
+	}
 	return pOpts
+}
+
+func toGoConfLogger(logger LoggerFunc) gconfIf.LoggerFunc {
+	return func(lvl gconfIf.LogLevel, format string, a ...interface{}) {
+		logger(
+			goConfLogLevelToLogLevel(lvl),
+			format,
+			a...,
+		)
+	}
+}
+
+func goConfLogLevelToLogLevel(lvl gconfIf.LogLevel) LogLevel {
+	switch lvl {
+	case gconfIf.LogLevel_Info:
+		return LogLevel_Info
+	case gconfIf.LogLevel_Debug:
+		return LogLevel_Debug
+	case gconfIf.LogLevel_Warn:
+		return LogLevel_Warn
+	case gconfIf.LogLevel_Error:
+		return LogLevel_Error
+	default:
+		return LogLevel_Info
+	}
 }
