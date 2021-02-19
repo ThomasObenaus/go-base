@@ -16,6 +16,7 @@ type providerCfg struct {
 	parameterName      string
 	shortParameterName string
 	logger             LoggerFunc
+	configEntries      []Entry
 }
 
 // ProviderOption represents an option for the Provider
@@ -26,6 +27,16 @@ func CfgFile(parameterName, shortParameterName string) ProviderOption {
 	return func(cfg *providerCfg) {
 		cfg.parameterName = parameterName
 		cfg.shortParameterName = shortParameterName
+	}
+}
+
+// CustomConfigEntries allows to add config entries that are created manually via NewEntry(..)
+func CustomConfigEntries(customConfigEntries []Entry) ProviderOption {
+	return func(cfg *providerCfg) {
+		if cfg.configEntries == nil {
+			cfg.configEntries = make([]Entry, 0)
+		}
+		cfg.configEntries = append(cfg.configEntries, customConfigEntries...)
 	}
 }
 
@@ -102,6 +113,13 @@ func pOptsToGConfPOpts(opts []ProviderOption) []gconf.ProviderOption {
 	if pCfg.logger != nil {
 		logger := toGoConfLogger(pCfg.logger)
 		pOpts = append(pOpts, gconf.Logger(logger))
+	}
+	if pCfg.configEntries != nil {
+		entries := make([]gconf.Entry, 0, len(pCfg.configEntries))
+		for _, e := range pCfg.configEntries {
+			entries = append(entries, entryToGConfEntry(e))
+		}
+		pOpts = append(pOpts, gconf.CustomConfigEntries(entries))
 	}
 	return pOpts
 }

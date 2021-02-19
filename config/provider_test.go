@@ -91,3 +91,50 @@ func ExampleNewProvider_withConfigFile() {
 	// Output:
 	// port=12345 was read from cfgFile=../test/data/config.yaml
 }
+
+func ExampleNewConfigProvider() {
+
+	// The configuration with the annotations needed in order to define how the config should be filled
+	type myCfg struct {
+		Field1 string `cfg:"{'name':'field-1','desc':'This is field 1','default':'default value for field 1'}"`
+		Field2 int    `cfg:"{'name':'field-2','desc':'This is field 2. It is a required field since no default values is defined.'}"`
+	}
+	cfg := myCfg{}
+
+	// It is still possible to create entries manually and add them via CustomConfigEntries
+	// But its value has then also filled into the config struct manually.
+	manualConfigEntries := []Entry{NewEntry("manual", "Manually created flag")}
+
+	// Create a provider based on the given config struct
+	provider, err := NewConfigProvider(&cfg,
+		"MyConfig",
+		"MY_APP",
+		Logger(WarnLogger),
+		CustomConfigEntries(manualConfigEntries),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	args := []string{"--field-2=22"}
+
+	// Read the parameters given via commandline into the config struct
+	err = provider.ReadConfig(args)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Print(provider.Usage())
+	// Output:
+	// --manual (-) [required]
+	// 	default: n/a
+	// 	desc: Manually created flag
+	//
+	// --field-1 (-)
+	// 	default: default value for field 1 (type=string)
+	// 	desc: This is field 1
+	//
+	// --field-2 (-) [required]
+	// 	default: n/a
+	// 	desc: This is field 2. It is a required field since no default values is defined.
+}
