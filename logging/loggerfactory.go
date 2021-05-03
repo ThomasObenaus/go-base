@@ -36,13 +36,13 @@ func New(structuredLogging, unixTimeStamp, disableColoredLogs bool, options ...O
 	}
 
 	// default format for the timestamp
-	zerolog.TimeFieldFormat = time.StampMilli //time.RFC3339
+	factory.timeFieldFormat = time.StampMilli //time.RFC3339
 
 	if unixTimeStamp {
 		// UNIX Time is faster and smaller than most timestamps
 		// If you set zerolog.TimeFieldFormat to an empty string,
 		// logs will write with UNIX time
-		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		factory.timeFieldFormat = zerolog.TimeFormatUnix
 	}
 
 	return factory
@@ -52,6 +52,7 @@ type loggerFactoryImpl struct {
 	structuredLogging  bool
 	disableColoredLogs bool
 	logLevel           zerolog.Level
+	timeFieldFormat    string // for allowed values please refer to zerolog.TimeFieldFormat
 }
 
 // NewNamedLogger creates a new named and configured log-channel (logger)
@@ -63,6 +64,6 @@ func (lf *loggerFactoryImpl) NewNamedLogger(name string) zerolog.Logger {
 
 	return zerolog.New(os.Stdout).Output(zerolog.ConsoleWriter{
 		NoColor: lf.disableColoredLogs, Out: os.Stderr,
-		TimeFormat: zerolog.TimeFieldFormat,
+		TimeFormat: lf.timeFieldFormat,
 	}).Level(lf.logLevel).With().Timestamp().Str("logger", name).Logger()
 }
