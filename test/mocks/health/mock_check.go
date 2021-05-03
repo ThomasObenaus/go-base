@@ -5,34 +5,35 @@
 package mock_health
 
 import (
-	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
 )
 
-// MockCheck is a mock of Check interface
+// MockCheck is a mock of Check interface.
 type MockCheck struct {
 	ctrl     *gomock.Controller
 	recorder *MockCheckMockRecorder
 }
 
-// MockCheckMockRecorder is the mock recorder for MockCheck
+// MockCheckMockRecorder is the mock recorder for MockCheck.
 type MockCheckMockRecorder struct {
 	mock *MockCheck
 }
 
-// NewMockCheck creates a new mock instance
+// NewMockCheck creates a new mock instance.
 func NewMockCheck(ctrl *gomock.Controller) *MockCheck {
 	mock := &MockCheck{ctrl: ctrl}
 	mock.recorder = &MockCheckMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockCheck) EXPECT() *MockCheckMockRecorder {
 	return m.recorder
 }
 
-// IsHealthy mocks base method
+// IsHealthy mocks base method.
 func (m *MockCheck) IsHealthy() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "IsHealthy")
@@ -40,13 +41,13 @@ func (m *MockCheck) IsHealthy() error {
 	return ret0
 }
 
-// IsHealthy indicates an expected call of IsHealthy
+// IsHealthy indicates an expected call of IsHealthy.
 func (mr *MockCheckMockRecorder) IsHealthy() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "IsHealthy", reflect.TypeOf((*MockCheck)(nil).IsHealthy))
 }
 
-// String mocks base method
+// String mocks base method.
 func (m *MockCheck) String() string {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "String")
@@ -54,7 +55,7 @@ func (m *MockCheck) String() string {
 	return ret0
 }
 
-// String indicates an expected call of String
+// String indicates an expected call of String.
 func (mr *MockCheckMockRecorder) String() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockCheck)(nil).String))
