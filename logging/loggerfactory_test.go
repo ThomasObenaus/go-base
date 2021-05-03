@@ -3,20 +3,26 @@ package logging
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNew(t *testing.T) {
 
 	lf := New(false, false, false)
 	assert.NotNil(t, lf)
-	assert.NotEmpty(t, zerolog.TimeFieldFormat)
+	lfImpl, ok := lf.(*loggerFactoryImpl)
+	require.True(t, ok)
+	assert.Equal(t, time.StampMilli, lfImpl.timeFieldFormat)
 
 	lf = New(false, true, false)
+	lfImpl, ok = lf.(*loggerFactoryImpl)
+	require.True(t, ok)
 	assert.NotNil(t, lf)
-	assert.Empty(t, zerolog.TimeFieldFormat)
+	assert.Equal(t, zerolog.TimeFormatUnix, lfImpl.timeFieldFormat)
 }
 
 func TestNewNamedLogger(t *testing.T) {
