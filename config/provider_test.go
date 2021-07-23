@@ -93,7 +93,6 @@ func ExampleNewProvider_withConfigFile() {
 }
 
 func ExampleNewConfigProvider() {
-
 	// The configuration with the annotations needed in order to define how the config should be filled
 	type myCfg struct {
 		Field1 string `cfg:"{'name':'field-1','desc':'This is field 1','default':'default value for field 1'}"`
@@ -127,14 +126,17 @@ func ExampleNewConfigProvider() {
 	fmt.Print(provider.Usage())
 	// Output:
 	// --manual (-) [required]
+	// 	env var: MY_APP_MANUAL
 	// 	default: n/a
 	// 	desc: Manually created flag
 	//
 	// --field-1 (-)
+	// 	env var: MY_APP_FIELD_1
 	// 	default: default value for field 1 (type=string)
 	// 	desc: This is field 1
 	//
 	// --field-2 (-) [required]
+	// 	env var: MY_APP_FIELD_2
 	// 	default: n/a
 	// 	desc: This is field 2. It is a required field since no default values is defined.
 }
