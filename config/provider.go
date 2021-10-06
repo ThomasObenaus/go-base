@@ -136,13 +136,13 @@ func toGoConfLogger(logger LoggerFunc) gconfIf.LoggerFunc {
 
 func goConfLogLevelToLogLevel(lvl gconfIf.LogLevel) LogLevel {
 	switch lvl {
-	case gconfIf.LogLevel_Info:
+	case gconfIf.LogLevelInfo:
 		return LogLevel_Info
-	case gconfIf.LogLevel_Debug:
+	case gconfIf.LogLevelDebug:
 		return LogLevel_Debug
-	case gconfIf.LogLevel_Warn:
+	case gconfIf.LogLevelWarn:
 		return LogLevel_Warn
-	case gconfIf.LogLevel_Error:
+	case gconfIf.LogLevelError:
 		return LogLevel_Error
 	default:
 		return LogLevel_Info

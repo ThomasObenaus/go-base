@@ -20,15 +20,14 @@ cover-upload: sep ## Uploads the unittest coverage to coveralls (for this the GO
 
 gen-mocks: sep ## Generates test doubles (mocks).
 	@echo "--> generate mocks (github.com/golang/mock/gomock is required for this)"
-	@go get github.com/golang/mock/gomock
-	@go install github.com/golang/mock/mockgen
+	@go install github.com/golang/mock/mockgen@latest
 	@mockgen -source=health/check.go -destination test/mocks/health/mock_check.go
 	@mockgen -source=shutdown/stopable.go -destination test/mocks/shutdown/mock_stopable.go
 
 tools: sep ## Installs needed tools
 	@echo "--> Install needed tools"
-	@go get golang.org/x/tools/cmd/cover
-	@go get github.com/mattn/goveralls
+	@go install golang.org/x/tools/cmd/cover@latest
+	@go install github.com/mattn/goveralls@latest
 
 sep:
 	@echo "----------------------------------------------------------------------------------"
