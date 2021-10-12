@@ -3,7 +3,7 @@ module github.com/ThomasObenaus/go-base
 go 1.13
 
 require (
-	github.com/ThomasObenaus/go-conf v0.1.2
+	github.com/ThomasObenaus/go-conf v0.1.3
 	github.com/golang/mock v1.6.0
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/pflag v1.0.5
