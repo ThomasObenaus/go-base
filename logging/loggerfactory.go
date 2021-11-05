@@ -10,6 +10,8 @@ import (
 // LoggerFactory is a factory that can be used to create named loggers using the same aligned configuration and namespace.
 type LoggerFactory interface {
 	NewNamedLogger(name string) zerolog.Logger
+	Level() zerolog.Level
+	IsStructuredLogging() bool
 }
 
 // Option is the struct for defining optional parameters for LoggerFactory
@@ -66,4 +68,12 @@ func (lf *loggerFactoryImpl) NewNamedLogger(name string) zerolog.Logger {
 		NoColor: lf.disableColoredLogs, Out: os.Stderr,
 		TimeFormat: lf.timeFieldFormat,
 	}).Level(lf.logLevel).With().Timestamp().Str("logger", name).Logger()
+}
+
+func (lf *loggerFactoryImpl) IsStructuredLogging() bool {
+	return lf.structuredLogging
+}
+
+func (lf *loggerFactoryImpl) Level() zerolog.Level {
+	return lf.logLevel
 }
