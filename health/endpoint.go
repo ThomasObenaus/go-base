@@ -59,7 +59,7 @@ func checkEvaluationResultToResponse(cer checkEvaluationResult, now time.Time, c
 
 // Health is the health endpoint
 func (m *Monitor) Health(w http.ResponseWriter, r *http.Request) {
-	m.logger.Info().Msg("Health endpoint called")
+	m.logger.Debug().Msg("Health endpoint called")
 
 	latestResult := m.latestCheckResult.Load().(checkEvaluationResult)
 	code, response := checkEvaluationResultToResponse(latestResult, time.Now(), m.checkEvaluationTimeout)
