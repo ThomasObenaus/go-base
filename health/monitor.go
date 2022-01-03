@@ -125,10 +125,12 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 		name := check.String()
 		err := check.IsHealthy()
 		result.checkHealthyness[name] = err
+		logEvent := m.logger.Debug()
 		if err != nil {
 			result.numErrors++
+			logEvent = m.logger.Error()
 		}
-		m.logger.Debug().Msgf("Check - '%s', err=%v", name, err)
+		logEvent.Err(err).Msgf("Check - '%s'", name)
 	}
 
 	if m.onCheckCallback != nil {
