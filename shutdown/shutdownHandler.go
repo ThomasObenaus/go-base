@@ -83,7 +83,7 @@ func stop(orderedStopables []Stopable, logger zerolog.Logger) {
 		logger.Debug().Msgf("Stopping %s ...", name)
 		err := stopable.Stop()
 		if err != nil {
-			logger.Error().Err(err).Msgf("Failed stopping '%s'", name)
+			logger.Error().Err(err).Bool("no_alert",true).Msgf("Failed stopping '%s'", name)
 			continue
 		}
 		logger.Info().Msgf("%s stopped.", name)

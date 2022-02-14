@@ -1,2 +1,6 @@
 
 coverage.out
+
+.idea/
+
+go-base.iml
