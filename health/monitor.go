@@ -130,7 +130,10 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 			result.numErrors++
 			logEvent = m.logger.Error()
 		}
-		logEvent.Err(err).Msgf("Check - '%s'", name)
+		logEvent.Err(err).
+			// don't propagate errors to alerting
+			Bool("no_alert",true).
+			Msgf("Check - '%s'", name)
 	}
 
 	if m.onCheckCallback != nil {

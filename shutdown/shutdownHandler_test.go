@@ -3,6 +3,7 @@ package shutdown
 import (
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -36,6 +37,7 @@ func Test_ShutdownHandler(t *testing.T) {
 	h := Handler{
 		orderedStopables:  stopables,
 		isShutdownPending: atomic.NewBool(false),
+		mux:               &sync.Mutex{},
 	}
 	shutDownChan := make(chan os.Signal, 1)
 
@@ -71,6 +73,7 @@ func Test_RegisterFront(t *testing.T) {
 	h := Handler{
 		orderedStopables:  make([]Stopable, 0),
 		isShutdownPending: atomic.NewBool(false),
+		mux:               &sync.Mutex{},
 	}
 	shutDownChan := make(chan os.Signal, 1)
 
@@ -111,6 +114,7 @@ func Test_RegisterBack(t *testing.T) {
 	h := Handler{
 		orderedStopables:  make([]Stopable, 0),
 		isShutdownPending: atomic.NewBool(false),
+		mux:               &sync.Mutex{},
 	}
 	shutDownChan := make(chan os.Signal, 1)
 
