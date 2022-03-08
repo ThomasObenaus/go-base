@@ -18,6 +18,8 @@ type Handler struct {
 
 	wg               sync.WaitGroup
 	orderedStopables []Stopable
+
+	mux *sync.Mutex
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
@@ -29,6 +31,7 @@ func InstallHandler(orderedStopables []Stopable, logger zerolog.Logger) *Handler
 		logger:            logger,
 		isShutdownPending: atomic.NewBool(false),
 		orderedStopables:  make([]Stopable, 0),
+		mux:               &sync.Mutex{},
 	}
 	handler.orderedStopables = append(handler.orderedStopables, orderedStopables...)
 
@@ -50,6 +53,8 @@ func (h *Handler) Register(stopable Stopable, front ...bool) {
 		pushFront = front[0]
 	}
 
+	h.mux.Lock()
+	defer h.mux.Unlock()
 	if pushFront {
 		h.orderedStopables = append([]Stopable{stopable}, h.orderedStopables...)
 	} else {
@@ -67,6 +72,8 @@ func (h *Handler) shutdownHandler(shutdownChan <-chan os.Signal, logger zerolog.
 	logger.Info().Msgf("Received %v. Shutting down...", s)
 
 	// Stop all components
+	h.mux.Lock()
+	defer h.mux.Unlock()
 	stop(h.orderedStopables, logger)
 }
 
@@ -78,12 +85,13 @@ func (h *Handler) WaitUntilSignal() {
 
 // stop calls Stop() on all Stopable in the list as they are ordered.
 func stop(orderedStopables []Stopable, logger zerolog.Logger) {
+
 	for _, stopable := range orderedStopables {
 		name := stopable.String()
 		logger.Debug().Msgf("Stopping %s ...", name)
 		err := stopable.Stop()
 		if err != nil {
-			logger.Error().Err(err).Bool("no_alert",true).Msgf("Failed stopping '%s'", name)
+			logger.Error().Err(err).Bool("no_alert", true).Msgf("Failed stopping '%s'", name)
 			continue
 		}
 		logger.Info().Msgf("%s stopped.", name)
