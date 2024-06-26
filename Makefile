@@ -23,6 +23,7 @@ gen-mocks: sep ## Generates test doubles (mocks).
 	@go install github.com/golang/mock/mockgen@latest
 	@mockgen -source=health/check.go -destination test/mocks/health/mock_check.go
 	@mockgen -source=shutdown/stopable.go -destination test/mocks/shutdown/mock_stopable.go
+	@mockgen -source=shutdown/shutdownHandler.go -destination test/mocks/shutdown/mock_shutdownHandler.go
 
 tools: sep ## Installs needed tools
 	@echo "--> Install needed tools"
