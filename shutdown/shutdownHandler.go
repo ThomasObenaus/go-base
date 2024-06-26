@@ -11,6 +11,12 @@ import (
 	"go.uber.org/atomic"
 )
 
+// ShutdownHandler is an helper interface to allow mocking and alternative
+type ShutdownHandler interface {
+	Register(stoppable Stopable, front ...bool)
+	WaitUntilSignal()
+}
+
 // Handler represents a handler for shutdown events
 type Handler struct {
 	logger            zerolog.Logger
