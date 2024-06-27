@@ -2,8 +2,8 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.13.1
-    working_directory: /go/src/github.com/thomasobenaus/sokar
+      - image: circleci/golang:1.17
+    working_directory: /go/src/github.com/thomasobenaus/go-base
     steps:
       - checkout
       - run: make all
