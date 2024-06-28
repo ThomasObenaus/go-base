@@ -88,6 +88,8 @@ func (m *Monitor) Join() {
 }
 
 func (m *Monitor) String() string {
+	m.mux.Lock()
+	defer m.mux.Unlock()
 	return fmt.Sprintf("HealthMonitor (%d checks)", len(m.healthChecks))
 }
 
@@ -132,7 +134,7 @@ func (m *Monitor) evaluateChecks(at time.Time) checkEvaluationResult {
 		}
 		logEvent.Err(err).
 			// don't propagate errors to alerting
-			Bool("no_alert",true).
+			Bool("no_alert", true).
 			Msgf("Check - '%s'", name)
 	}
 

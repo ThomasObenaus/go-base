@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	mock_shutdown "github.com/ThomasObenaus/go-base/test/mocks/shutdown"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -29,9 +28,9 @@ func Test_ShutdownHandler(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 	var stopables []Stopable
-	stopable1 := mock_shutdown.NewMockStopable(mockCtrl)
+	stopable1 := NewMockStopable(mockCtrl)
 	stopables = append(stopables, stopable1)
-	stopable2 := mock_shutdown.NewMockStopable(mockCtrl)
+	stopable2 := NewMockStopable(mockCtrl)
 	stopables = append(stopables, stopable2)
 	var logger zerolog.Logger
 	h := Handler{
@@ -67,8 +66,8 @@ func Test_RegisterFront(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	stopable1 := mock_shutdown.NewMockStopable(mockCtrl)
-	stopable2 := mock_shutdown.NewMockStopable(mockCtrl)
+	stopable1 := NewMockStopable(mockCtrl)
+	stopable2 := NewMockStopable(mockCtrl)
 	var logger zerolog.Logger
 	h := Handler{
 		orderedStopables:  make([]Stopable, 0),
@@ -108,8 +107,8 @@ func Test_RegisterBack(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	stopable1 := mock_shutdown.NewMockStopable(mockCtrl)
-	stopable2 := mock_shutdown.NewMockStopable(mockCtrl)
+	stopable1 := NewMockStopable(mockCtrl)
+	stopable2 := NewMockStopable(mockCtrl)
 	var logger zerolog.Logger
 	h := Handler{
 		orderedStopables:  make([]Stopable, 0),
