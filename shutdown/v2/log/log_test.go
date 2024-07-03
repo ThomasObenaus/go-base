@@ -20,7 +20,7 @@ func (l *logSink) Index(i int) string {
 	return l.logs[i]
 }
 
-func Test_shutdown_handler_does_log_when_service_will_be_stopped(t *testing.T) {
+func Test_does_log_when_service_will_be_stopped(t *testing.T) {
 	logs := &logSink{}
 	logger := zerolog.New(logs)
 	handler := ShutdownLog{Logger: logger}
@@ -31,7 +31,7 @@ func Test_shutdown_handler_does_log_when_service_will_be_stopped(t *testing.T) {
 	assert.Contains(t, logs.logs[0], "Stopping service name ...")
 }
 
-func Test_shutdown_handler_does_log_when_service_was_stopped_without_error(t *testing.T) {
+func Test_does_log_when_service_was_stopped_without_error(t *testing.T) {
 	logs := &logSink{}
 	logger := zerolog.New(logs)
 	handler := ShutdownLog{Logger: logger}
@@ -42,7 +42,7 @@ func Test_shutdown_handler_does_log_when_service_was_stopped_without_error(t *te
 	assert.Contains(t, logs.logs[0], "service name stopped.")
 }
 
-func Test_shutdown_handler_does_log_when_service_was_stopped_with_error(t *testing.T) {
+func Test_does_log_when_service_was_stopped_with_error(t *testing.T) {
 	logs := &logSink{}
 	logger := zerolog.New(logs)
 	handler := ShutdownLog{Logger: logger}
@@ -52,4 +52,15 @@ func Test_shutdown_handler_does_log_when_service_was_stopped_with_error(t *testi
 	assert.Len(t, logs.logs, 1)
 	assert.Contains(t, logs.logs[0], "Failed stopping 'service name'")
 	assert.Contains(t, logs.logs[0], "\"no_alert\":true")
+}
+
+func Test_does_log_when_handler_was_stopped(t *testing.T) {
+	logs := &logSink{}
+	logger := zerolog.New(logs)
+	handler := ShutdownLog{Logger: logger}
+
+	handler.ShutdownSignalReceived()
+
+	assert.Len(t, logs.logs, 1)
+	assert.Contains(t, logs.logs[0], "Shutting down...")
 }

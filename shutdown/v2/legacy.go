@@ -3,7 +3,7 @@ package v2
 import (
 	"github.com/ThomasObenaus/go-base/shutdown"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/health"
-	list "github.com/ThomasObenaus/go-base/shutdown/v2/list"
+	"github.com/ThomasObenaus/go-base/shutdown/v2/list"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/log"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/stop"

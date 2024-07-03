@@ -19,3 +19,15 @@ func Test_is_unhealthy_when_shutting_down(t *testing.T) {
 
 	assert.Error(t, err)
 }
+
+func Test_reports_health_status_depending_on_state(t *testing.T) {
+	handler := Health{}
+
+	status := handler.String()
+	assert.Equal(t, "ShutdownHandler (shutdown in progress=false)", status)
+
+	handler.ShutdownSignalReceived()
+
+	status = handler.String()
+	assert.Equal(t, "ShutdownHandler (shutdown in progress=true)", status)
+}
