@@ -12,7 +12,7 @@ func Test_can_register_a_stoppable_in_front(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	list := NewMockSynchronizedList(mockCtrl)
+	list := NewMocksynchronizedList(mockCtrl)
 	stoppable := NewMockStoppable(mockCtrl)
 	shutdownHandler := ShutdownHandler{stoppableItems: list}
 
@@ -28,7 +28,7 @@ func Test_can_register_a_stoppable_at_back(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	list := NewMockSynchronizedList(mockCtrl)
+	list := NewMocksynchronizedList(mockCtrl)
 	stoppable := NewMockStoppable(mockCtrl)
 	shutdownHandler := ShutdownHandler{stoppableItems: list}
 
@@ -44,7 +44,7 @@ func Test_can_wait_for_signal(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockSignalHandler := NewMockSignalHandler(mockCtrl)
+	mockSignalHandler := NewMocksignalHandler(mockCtrl)
 
 	shutdownHandler := ShutdownHandler{signalHandler: mockSignalHandler}
 
@@ -60,7 +60,7 @@ func Test_can_stop(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockSignalHandler := NewMockSignalHandler(mockCtrl)
+	mockSignalHandler := NewMocksignalHandler(mockCtrl)
 
 	shutdownHandler := ShutdownHandler{signalHandler: mockSignalHandler}
 
@@ -76,9 +76,9 @@ func Test_logs_all_stop_related_events(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockLog := NewMockLog(mockCtrl)
-	mockItemList := NewMockSynchronizedList(mockCtrl)
-	mockHealth := NewMockHealth(mockCtrl)
+	mockLog := NewMocklog(mockCtrl)
+	mockItemList := NewMocksynchronizedList(mockCtrl)
+	mockHealth := NewMockhealth(mockCtrl)
 	shutdownHandler := ShutdownHandler{
 		stoppableItems: mockItemList,
 		log:            mockLog,
@@ -107,9 +107,9 @@ func Test_notifies_health_monitor_on_service_stop(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockLog := NewMockLog(mockCtrl)
-	mockItemList := NewMockSynchronizedList(mockCtrl)
-	mockHealth := NewMockHealth(mockCtrl)
+	mockLog := NewMocklog(mockCtrl)
+	mockItemList := NewMocksynchronizedList(mockCtrl)
+	mockHealth := NewMockhealth(mockCtrl)
 	shutdownHandler := ShutdownHandler{
 		stoppableItems: mockItemList,
 		log:            mockLog,
@@ -132,7 +132,7 @@ func Test_uses_health_monitor_to_report_health_status(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	mockHealth := NewMockHealth(mockCtrl)
+	mockHealth := NewMockhealth(mockCtrl)
 	shutdownHandler := ShutdownHandler{
 		health: mockHealth,
 	}

@@ -2,19 +2,17 @@ package v2
 
 import (
 	"github.com/ThomasObenaus/go-base/shutdown"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/health"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/list"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/log"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/stop"
+	"github.com/ThomasObenaus/go-base/shutdown/v2/stop/list"
 	"github.com/rs/zerolog"
 )
 
 type ShutdownHandler struct {
-	stoppableItems SynchronizedList
-	signalHandler  SignalHandler
-	log            Log
-	health         Health
+	stoppableItems synchronizedList
+	signalHandler  signalHandler
+	log            log
+	health         health
 }
 
 func NewLegacyShutdownHandler(logger zerolog.Logger) *ShutdownHandler {

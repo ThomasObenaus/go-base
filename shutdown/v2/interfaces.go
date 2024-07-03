@@ -5,24 +5,24 @@ import (
 )
 
 // TODO: how to make a synchronized structure more visible
-type SynchronizedList interface {
+type synchronizedList interface {
 	AddToFront(stoppable stop.Stoppable)
 	AddToBack(stoppable1 stop.Stoppable)
 	GetItems() []stop.Stoppable
 }
 
-type SignalHandler interface {
+type signalHandler interface {
 	WaitForSignal()
 	StopWaitingAndNotifyListener()
 }
 
-type Log interface {
+type log interface {
 	ShutdownSignalReceived()
 	ServiceWillBeStopped(name string)
 	ServiceWasStopped(name string, err ...error)
 }
 
-type Health interface {
+type health interface {
 	ShutdownSignalReceived()
 	IsHealthy() error
 	String() string
