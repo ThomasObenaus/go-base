@@ -2,8 +2,6 @@ package stop
 
 import (
 	"fmt"
-	"github.com/ThomasObenaus/go-base/shutdown"
-	mock_shutdown "github.com/ThomasObenaus/go-base/test/mocks/shutdown"
 	"github.com/golang/mock/gomock"
 	"testing"
 )
@@ -107,15 +105,15 @@ func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t
 	Stop(stoppableList, listener)
 }
 
-func createDefaultStopScenario(t *testing.T) ([]shutdown.Stopable, *gomock.Controller, *MockListener, *mock_shutdown.MockStopable, *mock_shutdown.MockStopable, *mock_shutdown.MockStopable) {
+func createDefaultStopScenario(t *testing.T) ([]Stoppable, *gomock.Controller, *MockListener, *MockStoppable, *MockStoppable, *MockStoppable) {
 	mockCtrl := gomock.NewController(t)
-	stoppable1 := mock_shutdown.NewMockStopable(mockCtrl)
-	stoppable2 := mock_shutdown.NewMockStopable(mockCtrl)
-	stoppable3 := mock_shutdown.NewMockStopable(mockCtrl)
+	stoppable1 := NewMockStoppable(mockCtrl)
+	stoppable2 := NewMockStoppable(mockCtrl)
+	stoppable3 := NewMockStoppable(mockCtrl)
 
 	listener := NewMockListener(mockCtrl)
 
-	return []shutdown.Stopable{
+	return []Stoppable{
 		stoppable3, stoppable2, stoppable1,
 	}, mockCtrl, listener, stoppable1, stoppable2, stoppable3
 }

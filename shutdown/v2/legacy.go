@@ -3,7 +3,7 @@ package v2
 import (
 	"github.com/ThomasObenaus/go-base/shutdown"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/health"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/list"
+	list "github.com/ThomasObenaus/go-base/shutdown/v2/list"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/log"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/stop"
@@ -11,39 +11,15 @@ import (
 )
 
 type ShutdownHandler struct {
-	stoppableItems SynchronizedList[shutdown.Stopable]
+	stoppableItems SynchronizedList
 	signalHandler  SignalHandler
 	log            Log
 	health         Health
 }
 
-// TODO: how to make a synchronized structure more visible
-type SynchronizedList[T interface{}] interface {
-	AddToFront(stoppable T)
-	AddToBack(stoppable1 T)
-	GetItems() []T
-}
-
-type SignalHandler interface {
-	WaitForSignal()
-	StopWaitingAndNotifyListener()
-}
-
-type Log interface {
-	ShutdownSignalReceived()
-	ServiceWillBeStopped(name string)
-	ServiceWasStopped(name string, err ...error)
-}
-
-type Health interface {
-	ShutdownSignalReceived()
-	IsHealthy() error
-	String() string
-}
-
 func NewLegacyShutdownHandler(logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
-		stoppableItems: &list.SynchronizedList[shutdown.Stopable]{},
+		stoppableItems: &list.SynchronizedList{},
 		log:            log.ShutdownLog{Logger: logger},
 		health:         &health.Health{},
 	}

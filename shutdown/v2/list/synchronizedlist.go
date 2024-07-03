@@ -1,25 +1,28 @@
 package list
 
-import "sync"
+import (
+	"github.com/ThomasObenaus/go-base/shutdown/v2/stop"
+	"sync"
+)
 
-type SynchronizedList[T interface{}] struct {
-	items []T
+type SynchronizedList struct {
+	items []stop.Stoppable
 	mux   sync.Mutex
 }
 
-func (l *SynchronizedList[T]) AddToFront(stoppable T) {
+func (l *SynchronizedList) AddToFront(stoppable stop.Stoppable) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
-	l.items = append([]T{stoppable}, l.items...)
+	l.items = append([]stop.Stoppable{stoppable}, l.items...)
 }
 
-func (l *SynchronizedList[T]) AddToBack(stoppable1 T) {
+func (l *SynchronizedList) AddToBack(stoppable1 stop.Stoppable) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 	l.items = append(l.items, stoppable1)
 }
 
-func (l *SynchronizedList[T]) GetItems() []T {
+func (l *SynchronizedList) GetItems() []stop.Stoppable {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 	return l.items

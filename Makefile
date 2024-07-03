@@ -25,8 +25,10 @@ gen-mocks: sep ## Generates test doubles (mocks).
 	@mockgen -source=shutdown/stopable.go -destination shutdown/mock_stopable_test.go -package shutdown
 	@mockgen -source=shutdown/stopable.go -destination test/mocks/shutdown/mock_stopable.go
 	@mockgen -source=shutdown/shutdownHandler.go -destination test/mocks/shutdown/mock_shutdownHandler.go
-	@mockgen -source=shutdown/v2/stop/stop.go -destination shutdown/v2/stop/mock_stop_test.go -package stop
+	@mockgen -source=shutdown/v2/stop/interfaces.go -destination shutdown/v2/stop/mock_stop_test.go -package stop
+	@mockgen -source=shutdown/v2/stop/interfaces.go -destination shutdown/v2/list/mock_stop_test.go -package list
 	@mockgen -source=shutdown/v2/signal/signal.go -destination shutdown/v2/signal/mock_signal_test.go -package signal
+	@mockgen -source=shutdown/v2/interfaces.go -destination shutdown/v2/mock_interfaces_test.go -package v2
 
 tools: sep ## Installs needed tools
 	@echo "--> Install needed tools"
