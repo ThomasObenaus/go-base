@@ -18,11 +18,15 @@ type ShutdownHandler struct {
 }
 
 // TODO: how to test this
-func NewLegacyShutdownHandler(logger zerolog.Logger) *ShutdownHandler {
+func NewLegacyShutdownHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
 		stoppableItems: &list.SynchronizedList{},
 		log:            log2.ShutdownLog{Logger: logger},
 		health:         &health2.Health{},
+	}
+
+	for _, stopable := range orderedStopables {
+		shutdownHandler.stoppableItems.AddToBack(stopable)
 	}
 
 	handler := signal.NewDefaultSignalHandler(shutdownHandler)
