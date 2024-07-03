@@ -2,6 +2,8 @@ package v2
 
 import (
 	"github.com/ThomasObenaus/go-base/shutdown"
+	health2 "github.com/ThomasObenaus/go-base/shutdown/v2/health"
+	log2 "github.com/ThomasObenaus/go-base/shutdown/v2/log"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/stop"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/stop/list"
@@ -15,11 +17,12 @@ type ShutdownHandler struct {
 	health         health
 }
 
+// TODO: how to test this
 func NewLegacyShutdownHandler(logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
 		stoppableItems: &list.SynchronizedList{},
-		log:            log.ShutdownLog{Logger: logger},
-		health:         &health.Health{},
+		log:            log2.ShutdownLog{Logger: logger},
+		health:         &health2.Health{},
 	}
 
 	handler := signal.NewDefaultSignalHandler(shutdownHandler)
