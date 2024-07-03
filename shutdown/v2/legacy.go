@@ -30,15 +30,15 @@ func NewLegacyShutdownHandler(logger zerolog.Logger) *ShutdownHandler {
 	return shutdownHandler
 }
 
-func (h *ShutdownHandler) Register(stopable shutdown.Stopable, front ...bool) {
+func (h *ShutdownHandler) Register(stoppable shutdown.Stopable, front ...bool) {
 	if len(front) > 0 {
 		if front[0] {
-			h.stoppableItems.AddToFront(stopable)
+			h.stoppableItems.AddToFront(stoppable)
 			return
 		}
 	}
 
-	h.stoppableItems.AddToBack(stopable)
+	h.stoppableItems.AddToBack(stoppable)
 }
 
 func (h *ShutdownHandler) WaitForSignal() {
