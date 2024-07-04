@@ -96,7 +96,7 @@ func Test_can_wait_for_signal(t *testing.T) {
 	mockSignalHandler.EXPECT().WaitForSignal()
 
 	// WHEN
-	shutdownHandler.WaitForSignal()
+	shutdownHandler.WaitUntilSignal()
 }
 
 func Test_can_stop(t *testing.T) {

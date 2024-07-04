@@ -5,7 +5,6 @@ import (
 	log2 "github.com/ThomasObenaus/go-base/shutdown/log"
 	"github.com/ThomasObenaus/go-base/shutdown/signal"
 	stop2 "github.com/ThomasObenaus/go-base/shutdown/stop"
-	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
@@ -17,7 +16,7 @@ type ShutdownHandler struct {
 }
 
 // TODO: how to test this
-func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) (*ShutdownHandler, error) {
+func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
 		stoppableItems: &stop2.OrderedStoppableList{},
 		log:            log2.ShutdownLog{Logger: logger},
@@ -27,14 +26,15 @@ func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) (
 	for _, stopable := range orderedStopables {
 		err := shutdownHandler.stoppableItems.AddToBack(stopable)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to add stoppable")
+			logger.Error().Err(err).Msgf("can not stopre Stoppable")
+			return nil
 		}
 	}
 
 	handler := signal.NewDefaultSignalHandler(shutdownHandler)
 	shutdownHandler.signalHandler = handler
 
-	return shutdownHandler, nil
+	return shutdownHandler
 }
 
 func (h *ShutdownHandler) Register(stoppable stop2.Stoppable, front ...bool) {
@@ -66,7 +66,7 @@ func isFirstBoolUndefinedOrFalse(front []bool) bool {
 	return addToBack
 }
 
-func (h *ShutdownHandler) WaitForSignal() {
+func (h *ShutdownHandler) WaitUntilSignal() {
 	h.signalHandler.WaitForSignal()
 }
 
