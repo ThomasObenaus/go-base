@@ -43,7 +43,3 @@ func (h *Handler) waitForSignalAndCallListener(signalChannel chan os.Signal, lis
 func (h *Handler) WaitForSignal() {
 	h.wg.Wait()
 }
-
-func (h *Handler) NotifyListenerAndStopWaiting() {
-	h.signalChannel <- syscall.SIGTERM
-}
