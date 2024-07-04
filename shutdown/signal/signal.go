@@ -42,3 +42,7 @@ func (h *Handler) WaitForSignal() {
 	time.Sleep(time.Millisecond * 20)
 	h.wg.Wait()
 }
+
+func (h *Handler) NotifyListenerAndStopWaiting() {
+	close(h.signalChannel)
+}

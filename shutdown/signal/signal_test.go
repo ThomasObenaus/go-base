@@ -71,6 +71,67 @@ func Test_can_create_signal_handler_which_calls_listener_when_signal_is_received
 	}
 }
 
+func Test_explicit_stop_informs_shutdown_listener(t *testing.T) {
+	// GIVEN
+	mockCtrl := gomock.NewController(t)
+	listener := NewMockListener(mockCtrl)
+	done := make(chan struct{})
+
+	shutDownChan := make(chan os.Signal, 1)
+	handler := NewSignalHandler(shutDownChan, listener)
+	assert.NotNil(t, handler)
+
+	// EXPECT
+	listener.EXPECT().ShutdownSignalReceived().Do(func() {
+		close(done)
+	})
+
+	// WHEN
+	go func() {
+		handler.NotifyListenerAndStopWaiting()
+	}()
+
+	// THEN
+	timeout := time.After(time.Second)
+	select {
+	case <-done:
+	case <-timeout:
+		t.Errorf("signal handler listener was never called")
+	}
+}
+
+func Test_explicit_stop_releases_waiting_threads(t *testing.T) {
+	// GIVEN
+	mockCtrl := gomock.NewController(t)
+	listener := NewMockListener(mockCtrl)
+	done := make(chan struct{})
+
+	shutDownChan := make(chan os.Signal, 1)
+	handler := NewSignalHandler(shutDownChan, listener)
+	assert.NotNil(t, handler)
+
+	time.Sleep(time.Millisecond * 20)
+
+	// IGNORE
+	listener.EXPECT().ShutdownSignalReceived().AnyTimes()
+
+	// WHEN
+	go func() {
+		handler.WaitForSignal()
+		close(done)
+	}()
+
+	handler.NotifyListenerAndStopWaiting()
+
+	// THEN
+	timeout := time.After(time.Second)
+	select {
+	case <-done:
+	case <-timeout:
+		t.Errorf("waiting did not stop in time")
+	}
+}
+
 func Test_signal_handler_will_not_block_if_signal_is_received(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
