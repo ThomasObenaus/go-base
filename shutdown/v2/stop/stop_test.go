@@ -8,7 +8,7 @@ import (
 
 func Test_all_stoppable_items_are_stopped_in_order_given(t *testing.T) {
 	// GIVEN
-	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario(t)
+	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario2(t)
 	defer ctrl.Finish()
 
 	// IGNORE
@@ -26,12 +26,12 @@ func Test_all_stoppable_items_are_stopped_in_order_given(t *testing.T) {
 		stoppable1.EXPECT().Stop())
 
 	// WHEN
-	Stop(stoppableList, listener)
+	stoppableList.StopAllInOrder(listener)
 }
 
 func Test_listener_is_called_when_a_service_is_about_to_be_stopped(t *testing.T) {
 	// GIVEN
-	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario(t)
+	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario2(t)
 	defer ctrl.Finish()
 
 	// IGNORE
@@ -52,12 +52,12 @@ func Test_listener_is_called_when_a_service_is_about_to_be_stopped(t *testing.T)
 	)
 
 	// WHEN
-	Stop(stoppableList, listener)
+	stoppableList.StopAllInOrder(listener)
 }
 
 func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
 	// GIVEN
-	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario(t)
+	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario2(t)
 	defer ctrl.Finish()
 
 	// IGNORE
@@ -77,12 +77,12 @@ func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
 	)
 
 	// WHEN
-	Stop(stoppableList, listener)
+	stoppableList.StopAllInOrder(listener)
 }
 
 func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t *testing.T) {
 	// GIVEN
-	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario(t)
+	stoppableList, ctrl, listener, stoppable1, stoppable2, stoppable3 := createDefaultStopScenario2(t)
 	defer ctrl.Finish()
 
 	// IGNORE
@@ -102,10 +102,10 @@ func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t
 	)
 
 	// WHEN
-	Stop(stoppableList, listener)
+	stoppableList.StopAllInOrder(listener)
 }
 
-func createDefaultStopScenario(t *testing.T) ([]Stoppable, *gomock.Controller, *MockListener, *MockStoppable, *MockStoppable, *MockStoppable) {
+func createDefaultStopScenario2(t *testing.T) (OrderedStoppableList, *gomock.Controller, *MockListener, *MockStoppable, *MockStoppable, *MockStoppable) {
 	mockCtrl := gomock.NewController(t)
 	stoppable1 := NewMockStoppable(mockCtrl)
 	stoppable2 := NewMockStoppable(mockCtrl)
@@ -113,7 +113,7 @@ func createDefaultStopScenario(t *testing.T) ([]Stoppable, *gomock.Controller, *
 
 	listener := NewMockListener(mockCtrl)
 
-	return []Stoppable{
-		stoppable3, stoppable2, stoppable1,
+	return OrderedStoppableList{
+		items: []Stoppable{stoppable3, stoppable2, stoppable1},
 	}, mockCtrl, listener, stoppable1, stoppable2, stoppable3
 }

@@ -23,3 +23,7 @@ func (h ShutdownLog) ServiceWasStopped(name string, err ...error) {
 	}
 	h.Logger.Info().Msgf("%s stopped.", name)
 }
+
+func (h ShutdownLog) LogCanNotAddService(serviceName string) {
+	h.Logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
+}

@@ -5,45 +5,66 @@ import (
 	health2 "github.com/ThomasObenaus/go-base/shutdown/v2/health"
 	log2 "github.com/ThomasObenaus/go-base/shutdown/v2/log"
 	"github.com/ThomasObenaus/go-base/shutdown/v2/signal"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/stop"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/stop/list"
+	stop2 "github.com/ThomasObenaus/go-base/shutdown/v2/stop"
+	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
 
 type ShutdownHandler struct {
-	stoppableItems synchronizedList
-	signalHandler  signalHandler
-	log            log
-	health         health
+	stoppableItems stopIF
+	signalHandler  signalHandlerIF
+	log            logIF
+	health         healthIF
 }
 
 // TODO: how to test this
-func NewLegacyShutdownHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
+func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) (*ShutdownHandler, error) {
 	shutdownHandler := &ShutdownHandler{
-		stoppableItems: &list.SynchronizedList{},
+		stoppableItems: &stop2.OrderedStoppableList{},
 		log:            log2.ShutdownLog{Logger: logger},
 		health:         &health2.Health{},
 	}
 
 	for _, stopable := range orderedStopables {
-		shutdownHandler.stoppableItems.AddToBack(stopable)
+		err := shutdownHandler.stoppableItems.AddToBack(stopable)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to add stoppable")
+		}
 	}
 
 	handler := signal.NewDefaultSignalHandler(shutdownHandler)
 	shutdownHandler.signalHandler = handler
 
-	return shutdownHandler
+	return shutdownHandler, nil
 }
 
 func (h *ShutdownHandler) Register(stoppable shutdown.Stopable, front ...bool) {
+	addToBack := isFirstBoolUndefinedOrFalse(front)
+
+	if addToBack {
+		err := h.stoppableItems.AddToBack(stoppable)
+		if err != nil {
+			serviceName := stoppable.String()
+			h.log.LogCanNotAddService(serviceName)
+		}
+		return
+	}
+	err := h.stoppableItems.AddToFront(stoppable)
+	if err != nil {
+		serviceName := stoppable.String()
+		h.log.LogCanNotAddService(serviceName)
+	}
+}
+
+func isFirstBoolUndefinedOrFalse(front []bool) bool {
+	addToBack := true
+
 	if len(front) > 0 {
 		if front[0] {
-			h.stoppableItems.AddToFront(stoppable)
-			return
+			addToBack = false
 		}
 	}
-
-	h.stoppableItems.AddToBack(stoppable)
+	return addToBack
 }
 
 func (h *ShutdownHandler) WaitForSignal() {
@@ -57,15 +78,7 @@ func (h *ShutdownHandler) Stop() {
 func (h *ShutdownHandler) ShutdownSignalReceived() {
 	h.log.ShutdownSignalReceived()
 	h.health.ShutdownSignalReceived()
-	stop.Stop(h.stoppableItems.GetItems(), h)
-}
-
-func (h *ShutdownHandler) ServiceWillBeStopped(name string) {
-	h.log.ServiceWillBeStopped(name)
-}
-
-func (h *ShutdownHandler) ServiceWasStopped(name string, err ...error) {
-	h.log.ServiceWasStopped(name, err...)
+	h.stoppableItems.StopAllInOrder(h.log)
 }
 
 func (h *ShutdownHandler) IsHealthy() error {

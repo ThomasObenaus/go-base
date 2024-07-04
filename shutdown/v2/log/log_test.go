@@ -64,3 +64,14 @@ func Test_does_log_when_handler_was_stopped(t *testing.T) {
 	assert.Len(t, logs.logs, 1)
 	assert.Contains(t, logs.logs[0], "Shutting down...")
 }
+
+func Test_does_log_when_adding_items_while_shutting_down(t *testing.T) {
+	logs := &logSink{}
+	logger := zerolog.New(logs)
+	handler := ShutdownLog{Logger: logger}
+
+	handler.LogCanNotAddService("some service name")
+
+	assert.Len(t, logs.logs, 1)
+	assert.Contains(t, logs.logs[0], "can not add service 'some service name' to shutdown list while shutting down")
+}
