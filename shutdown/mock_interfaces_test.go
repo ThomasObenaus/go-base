@@ -97,6 +97,18 @@ func (m *MocksignalHandlerIF) EXPECT() *MocksignalHandlerIFMockRecorder {
 	return m.recorder
 }
 
+// NotifyListenerAndStopWaiting mocks base method.
+func (m *MocksignalHandlerIF) NotifyListenerAndStopWaiting() {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "NotifyListenerAndStopWaiting")
+}
+
+// NotifyListenerAndStopWaiting indicates an expected call of NotifyListenerAndStopWaiting.
+func (mr *MocksignalHandlerIFMockRecorder) NotifyListenerAndStopWaiting() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyListenerAndStopWaiting", reflect.TypeOf((*MocksignalHandlerIF)(nil).NotifyListenerAndStopWaiting))
+}
+
 // WaitForSignal mocks base method.
 func (m *MocksignalHandlerIF) WaitForSignal() {
 	m.ctrl.T.Helper()
