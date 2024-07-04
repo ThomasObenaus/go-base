@@ -1,11 +1,10 @@
 package v2
 
 import (
-	"github.com/ThomasObenaus/go-base/shutdown"
-	health2 "github.com/ThomasObenaus/go-base/shutdown/v2/health"
-	log2 "github.com/ThomasObenaus/go-base/shutdown/v2/log"
-	"github.com/ThomasObenaus/go-base/shutdown/v2/signal"
-	stop2 "github.com/ThomasObenaus/go-base/shutdown/v2/stop"
+	health2 "github.com/ThomasObenaus/go-base/shutdown/health"
+	log2 "github.com/ThomasObenaus/go-base/shutdown/log"
+	"github.com/ThomasObenaus/go-base/shutdown/signal"
+	stop2 "github.com/ThomasObenaus/go-base/shutdown/stop"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 )
@@ -38,7 +37,7 @@ func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) (
 	return shutdownHandler, nil
 }
 
-func (h *ShutdownHandler) Register(stoppable shutdown.Stopable, front ...bool) {
+func (h *ShutdownHandler) Register(stoppable stop2.Stoppable, front ...bool) {
 	addToBack := isFirstBoolUndefinedOrFalse(front)
 
 	if addToBack {

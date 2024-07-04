@@ -131,11 +131,11 @@ func Test_logs_all_stop_related_events(t *testing.T) {
 
 	// IGNORE
 	mockHealth.EXPECT().ShutdownSignalReceived().AnyTimes()
-	mockStop.EXPECT().Stop(gomock.Any()).AnyTimes()
 
 	// EXPECT
 	gomock.InOrder(
 		mockLog.EXPECT().ShutdownSignalReceived(),
+		mockStop.EXPECT().StopAllInOrder(mockLog),
 	)
 
 	// WHEN
@@ -158,7 +158,7 @@ func Test_notifies_health_monitor_on_service_stop(t *testing.T) {
 
 	// IGNORE
 	mockLog.EXPECT().ShutdownSignalReceived().AnyTimes()
-	mockStop.EXPECT().Stop(gomock.Any()).AnyTimes()
+	mockStop.EXPECT().StopAllInOrder(gomock.Any()).AnyTimes()
 
 	// EXPECT
 	mockHealth.EXPECT().ShutdownSignalReceived()
@@ -212,12 +212,9 @@ func Test_informs_stop_that_it_should_stop(t *testing.T) {
 	// IGNORE
 	mockHealth.EXPECT().ShutdownSignalReceived().AnyTimes()
 	mockLog.EXPECT().ShutdownSignalReceived()
-	//mockLog.EXPECT().ServiceWillBeStopped(gomock.Any()).AnyTimes()
-	//mockLog.EXPECT().ServiceWasStopped(gomock.Any()).AnyTimes()
-	//mockLog.EXPECT().ServiceWasStopped(gomock.Any(), gomock.Any()).AnyTimes()
 
 	// EXPECT
-	mockStop.EXPECT().Stop(mockLog)
+	mockStop.EXPECT().StopAllInOrder(mockLog)
 
 	// WHEN
 	shutdownHandler.ShutdownSignalReceived()

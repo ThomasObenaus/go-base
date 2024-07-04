@@ -7,7 +7,7 @@ package v2
 import (
 	reflect "reflect"
 
-	stop "github.com/ThomasObenaus/go-base/shutdown/v2/stop"
+	stop "github.com/ThomasObenaus/go-base/shutdown/stop"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -62,16 +62,16 @@ func (mr *MockstopIFMockRecorder) AddToFront(stoppable interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddToFront", reflect.TypeOf((*MockstopIF)(nil).AddToFront), stoppable)
 }
 
-// Stop mocks base method.
+// StopAllInOrder mocks base method.
 func (m *MockstopIF) StopAllInOrder(listener stop.Listener) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "Stop", listener)
+	m.ctrl.Call(m, "StopAllInOrder", listener)
 }
 
-// Stop indicates an expected call of Stop.
-func (mr *MockstopIFMockRecorder) Stop(listener interface{}) *gomock.Call {
+// StopAllInOrder indicates an expected call of StopAllInOrder.
+func (mr *MockstopIFMockRecorder) StopAllInOrder(listener interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Stop", reflect.TypeOf((*MockstopIF)(nil).StopAllInOrder), listener)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopAllInOrder", reflect.TypeOf((*MockstopIF)(nil).StopAllInOrder), listener)
 }
 
 // MocksignalHandlerIF is a mock of signalHandlerIF interface.

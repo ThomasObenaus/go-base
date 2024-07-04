@@ -1,7 +1,7 @@
 package v2
 
 import (
-	stop2 "github.com/ThomasObenaus/go-base/shutdown/v2/stop"
+	stop2 "github.com/ThomasObenaus/go-base/shutdown/stop"
 )
 
 // TODO: how to make a synchronized structure more visible
