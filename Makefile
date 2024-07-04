@@ -11,7 +11,7 @@ help: ## Prints the help
 
 test: sep gen-mocks ## Runs all unittests and generates a coverage report.
 	@echo "--> Run the unit-tests"
-	@go test ./health ./shutdown ./shutdown/v2/*/ ./config ./buildinfo ./logging -covermode=count -coverprofile=coverage.out
+	@go test ./health ./shutdown/*/ ./config ./buildinfo ./logging -covermode=count -coverprofile=coverage.out
 
 cover-upload: sep ## Uploads the unittest coverage to coveralls (for this the GO_BASE_COVERALLS_REPO_TOKEN has to be set correctly).
 	# for this to get working you have to export the repo_token for your repo at coveralls.io
@@ -22,13 +22,10 @@ gen-mocks: sep ## Generates test doubles (mocks).
 	@echo "--> generate mocks (github.com/golang/mock/gomock is required for this)"
 	@go install github.com/golang/mock/mockgen@latest
 	@mockgen -source=health/check.go -destination test/mocks/health/mock_check.go
-	@mockgen -source=shutdown/stopable.go -destination shutdown/mock_stopable_test.go -package shutdown
-	@mockgen -source=shutdown/stopable.go -destination test/mocks/shutdown/mock_stopable.go
-	@mockgen -source=shutdown/shutdownHandler.go -destination test/mocks/shutdown/mock_shutdownHandler.go
-	@mockgen -source=shutdown/v2/stop/interfaces.go -destination shutdown/v2/stop/mock_stop_test.go -package stop
-	@mockgen -source=shutdown/v2/stop/interfaces.go -destination shutdown/v2/mock_stop_test.go -package v2
-	@mockgen -source=shutdown/v2/signal/signal.go -destination shutdown/v2/signal/mock_signal_test.go -package signal
-	@mockgen -source=shutdown/v2/interfaces.go -destination shutdown/v2/mock_interfaces_test.go -package v2
+	@mockgen -source=shutdown/stop/interfaces.go -destination shutdown/stop/mock_stop_test.go -package stop
+	@mockgen -source=shutdown/stop/interfaces.go -destination shutdown/mock_stop_test.go -package v2
+	@mockgen -source=shutdown/signal/signal.go -destination shutdown/signal/mock_signal_test.go -package signal
+	@mockgen -source=shutdown/interfaces.go -destination shutdown/mock_interfaces_test.go -package v2
 
 tools: sep ## Installs needed tools
 	@echo "--> Install needed tools"
