@@ -70,7 +70,7 @@ func (h *ShutdownHandler) WaitUntilSignal() {
 	h.signalHandler.WaitForSignal()
 }
 
-func (h *ShutdownHandler) Stop() {
+func (h *ShutdownHandler) StopWaitingAndShutdownAll() {
 	h.signalHandler.StopWaitingAndNotifyListener()
 }
 

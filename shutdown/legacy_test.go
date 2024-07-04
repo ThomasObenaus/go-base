@@ -99,7 +99,7 @@ func Test_can_wait_for_signal(t *testing.T) {
 	shutdownHandler.WaitUntilSignal()
 }
 
-func Test_can_stop(t *testing.T) {
+func Test_informs_signal_handler_when_to_stop_waiting_for_signal_and_shutdown(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -112,7 +112,7 @@ func Test_can_stop(t *testing.T) {
 	mockSignalHandler.EXPECT().StopWaitingAndNotifyListener()
 
 	// WHEN
-	shutdownHandler.Stop()
+	shutdownHandler.StopWaitingAndShutdownAll()
 }
 
 func Test_logs_all_stop_related_events(t *testing.T) {
