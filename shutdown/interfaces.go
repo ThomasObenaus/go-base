@@ -12,6 +12,7 @@ type stopIF interface {
 
 type signalHandlerIF interface {
 	WaitForSignal()
+	NotifyListenerAndStopWaiting()
 }
 
 type logIF interface {

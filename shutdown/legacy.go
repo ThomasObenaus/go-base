@@ -69,6 +69,10 @@ func (h *ShutdownHandler) WaitUntilSignal() {
 	h.signalHandler.WaitForSignal()
 }
 
+func (h *ShutdownHandler) ShutdownAllAndStopWaiting() {
+	h.signalHandler.NotifyListenerAndStopWaiting()
+}
+
 func (h *ShutdownHandler) ShutdownSignalReceived() {
 	h.log.ShutdownSignalReceived()
 	h.health.ShutdownSignalReceived()
