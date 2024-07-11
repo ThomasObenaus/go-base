@@ -37,7 +37,7 @@ func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *S
 }
 
 func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
-	addToBack := isFirstBoolUndefinedOrFalse(front)
+	addToBack := isEmptyOrFirstEntryFalse(front)
 
 	if addToBack {
 		err := h.stoppableItems.AddToBack(stoppable)
@@ -54,15 +54,12 @@ func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
 	}
 }
 
-func isFirstBoolUndefinedOrFalse(front []bool) bool {
-	addToBack := true
-
-	if len(front) > 0 {
-		if front[0] {
-			addToBack = false
-		}
+func isEmptyOrFirstEntryFalse(list []bool) bool {
+	if len(list) == 0 {
+		return true
 	}
-	return addToBack
+
+	return !list[0]
 }
 
 func (h *ShutdownHandler) WaitUntilSignal() {
