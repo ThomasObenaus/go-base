@@ -34,10 +34,10 @@ func NewSignalHandler(signalChannel chan os.Signal, listener Listener) *Handler 
 }
 
 func (h *Handler) waitForSignalAndCallListener(signalChannel chan os.Signal, listener Listener) {
+	defer h.wg.Done()
 	h.wg.Add(1)
 	_, _ = <-signalChannel
 	listener.ShutdownSignalReceived()
-	h.wg.Done()
 }
 
 func (h *Handler) WaitForSignal() {
