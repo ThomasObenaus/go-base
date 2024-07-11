@@ -91,7 +91,6 @@ func Test_signal_handler_will_not_block_if_signal_is_received(t *testing.T) {
 
 	// THEN
 	go func() {
-		time.Sleep(time.Millisecond * 10)
 		signalHandler.WaitForSignal()
 		close(done)
 	}()
@@ -121,7 +120,6 @@ func Test_signal_handler_will_block_if_no_signal_is_received(t *testing.T) {
 
 	// THEN
 	go func() {
-		time.Sleep(time.Millisecond * 10)
 		signalHandler.WaitForSignal()
 		close(done)
 	}()
