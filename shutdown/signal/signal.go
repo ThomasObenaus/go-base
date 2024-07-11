@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 type Handler struct {
@@ -38,5 +39,6 @@ func (h *Handler) waitForSignalAndCallListener(signalChannel chan os.Signal, lis
 }
 
 func (h *Handler) WaitForSignal() {
+	time.Sleep(time.Millisecond * 20)
 	h.wg.Wait()
 }
