@@ -25,10 +25,7 @@ func NewDefaultSignalHandler(listener Listener) *Handler {
 
 func NewSignalHandler(signalChannel chan os.Signal, listener Listener) *Handler {
 	handler := Handler{signalChannel: signalChannel}
-
-	go func() {
-		handler.waitForSignalAndCallListener(signalChannel, listener)
-	}()
+	go handler.waitForSignalAndCallListener(signalChannel, listener)
 
 	return &handler
 }
