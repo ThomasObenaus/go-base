@@ -43,29 +43,29 @@ func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *S
 // If you call Register(stopable,false) you can add this Stopable to the end
 // of the list of registered Stopables.
 func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
-	addToBack := isEmptyOrFirstEntryFalse(front)
+	addToFront := isEmptyOrFirstEntryTrue(front)
 
-	if addToBack {
-		err := h.stoppableItems.AddToBack(stoppable)
+	if addToFront {
+		err := h.stoppableItems.AddToFront(stoppable)
 		if err != nil {
 			serviceName := stoppable.String()
 			h.log.LogCanNotAddService(serviceName)
 		}
 		return
 	}
-	err := h.stoppableItems.AddToFront(stoppable)
+	err := h.stoppableItems.AddToBack(stoppable)
 	if err != nil {
 		serviceName := stoppable.String()
 		h.log.LogCanNotAddService(serviceName)
 	}
 }
 
-func isEmptyOrFirstEntryFalse(list []bool) bool {
+func isEmptyOrFirstEntryTrue(list []bool) bool {
 	if len(list) == 0 {
 		return true
 	}
 
-	return !list[0]
+	return list[0]
 }
 
 func (h *ShutdownHandler) WaitUntilSignal() {
