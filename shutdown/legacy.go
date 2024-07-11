@@ -15,6 +15,7 @@ type ShutdownHandler struct {
 	health         healthIF
 }
 
+// InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
 func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
 		stoppableItems: &stop.OrderedStoppableList{},
@@ -36,6 +37,11 @@ func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *S
 	return shutdownHandler
 }
 
+// Register a Stopable for shutdown handling. Per default the Stopable
+// is added to the front of the list of Stopable's this means the
+// Stopable that was the last one registered will be the first being called for shutdown.
+// If you call Register(stopable,false) you can add this Stopable to the end
+// of the list of registered Stopables.
 func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
 	addToBack := isEmptyOrFirstEntryFalse(front)
 
