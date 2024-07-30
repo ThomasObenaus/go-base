@@ -17,7 +17,9 @@ func (h ShutdownLog) ServiceWillBeStopped(name string) {
 }
 
 func (h ShutdownLog) ServiceWasStopped(name string, err ...error) {
-	if len(err) > 0 {
+	hasError := len(err) > 0 && err[0] != nil
+
+	if hasError {
 		h.Logger.Error().Err(err[0]).Bool("no_alert", true).Msgf("Failed stopping '%s'", name)
 		return
 	}

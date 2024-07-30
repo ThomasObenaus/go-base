@@ -48,6 +48,10 @@ func stop(stoppableItems []Stoppable, listener Listener) {
 		serviceName := stoppable.String()
 		listener.ServiceWillBeStopped(serviceName)
 		err := stoppable.Stop()
-		listener.ServiceWasStopped(serviceName, err)
+		if err != nil {
+			listener.ServiceWasStopped(serviceName, err)
+			continue
+		}
+		listener.ServiceWasStopped(serviceName)
 	}
 }
