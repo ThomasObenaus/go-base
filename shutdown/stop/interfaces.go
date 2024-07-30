@@ -1,7 +1,11 @@
-package shutdown
+package stop
 
-// Stopable is a interface for runnable sokar components
-type Stopable interface {
+type Listener interface {
+	ServiceWillBeStopped(name string)
+	ServiceWasStopped(name string, err ...error)
+}
+
+type Stoppable interface {
 
 	// Stop will be called as soon as the shutdown signal was caught.
 	// Hence within this method all teardown actions should be done (e.g. free resources, leave task main loops, ...)
