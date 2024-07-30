@@ -40,6 +40,13 @@ func Test_does_log_when_service_was_stopped_without_error(t *testing.T) {
 
 	assert.Len(t, logs.logs, 1)
 	assert.Contains(t, logs.logs[0], "service name stopped.")
+
+	logs.logs = nil
+
+	handler.ServiceWasStopped("service name", nil)
+
+	assert.Len(t, logs.logs, 1)
+	assert.Contains(t, logs.logs[0], "service name stopped.")
 }
 
 func Test_does_log_when_service_was_stopped_with_error(t *testing.T) {

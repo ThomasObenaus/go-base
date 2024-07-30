@@ -69,11 +69,11 @@ func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
 	// EXPECT
 	gomock.InOrder(
 		stoppable3.EXPECT().Stop(),
-		listener.EXPECT().ServiceWasStopped("service 3", gomock.Any()),
+		listener.EXPECT().ServiceWasStopped("service 3"),
 		stoppable2.EXPECT().Stop(),
-		listener.EXPECT().ServiceWasStopped("service 2", gomock.Any()),
+		listener.EXPECT().ServiceWasStopped("service 2"),
 		stoppable1.EXPECT().Stop(),
-		listener.EXPECT().ServiceWasStopped("service 1", gomock.Any()),
+		listener.EXPECT().ServiceWasStopped("service 1"),
 	)
 
 	// WHEN
