@@ -1,14 +1,13 @@
-package v2
+package shutdown
 
 import (
-	stop2 "github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/shutdown/stop"
 )
 
-// TODO: how to make a synchronized structure more visible
 type stopIF interface {
-	AddToFront(stoppable stop2.Stoppable) error
-	AddToBack(stoppable1 stop2.Stoppable) error
-	StopAllInOrder(listener stop2.Listener)
+	AddToFront(stoppable stop.Stoppable) error
+	AddToBack(stoppable1 stop.Stoppable) error
+	StopAllInOrder(listener stop.Listener)
 }
 
 type signalHandlerIF interface {

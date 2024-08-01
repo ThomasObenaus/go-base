@@ -1,4 +1,4 @@
-package v2
+package shutdown
 
 import (
 	"fmt"
@@ -13,14 +13,17 @@ func Test_can_register_a_stoppable_in_front(t *testing.T) {
 	defer mockCtrl.Finish()
 
 	list := NewMockstopIF(mockCtrl)
-	stoppable := NewMockStoppable(mockCtrl)
+	stoppable1 := NewMockStoppable(mockCtrl)
+	stoppable2 := NewMockStoppable(mockCtrl)
 	shutdownHandler := ShutdownHandler{stoppableItems: list}
 
 	// EXPECT
-	list.EXPECT().AddToFront(stoppable)
+	list.EXPECT().AddToFront(stoppable1)
+	list.EXPECT().AddToFront(stoppable2)
 
 	// WHEN
-	shutdownHandler.Register(stoppable, true)
+	shutdownHandler.Register(stoppable1, true)
+	shutdownHandler.Register(stoppable2)
 }
 
 func Test_logs_failure_if_stoppable_can_not_be_added_in_front(t *testing.T) {
@@ -58,7 +61,7 @@ func Test_can_register_a_stoppable_at_back(t *testing.T) {
 	list.EXPECT().AddToBack(stoppable)
 
 	// WHEN
-	shutdownHandler.Register(stoppable)
+	shutdownHandler.Register(stoppable, false)
 }
 
 func Test_logs_failure_if_stoppable_can_not_be_added_to_back(t *testing.T) {
@@ -75,7 +78,7 @@ func Test_logs_failure_if_stoppable_can_not_be_added_to_back(t *testing.T) {
 	}
 
 	// EXPECT
-	mockStop.EXPECT().AddToBack(stoppable).Return(fmt.Errorf("some error"))
+	mockStop.EXPECT().AddToFront(stoppable).Return(fmt.Errorf("some error"))
 	stoppable.EXPECT().String().Return("some service")
 	mockLog.EXPECT().LogCanNotAddService("some service")
 

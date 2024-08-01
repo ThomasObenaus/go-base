@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 )
 
 type Handler struct {
@@ -25,25 +26,23 @@ func NewDefaultSignalHandler(listener Listener) *Handler {
 
 func NewSignalHandler(signalChannel chan os.Signal, listener Listener) *Handler {
 	handler := Handler{signalChannel: signalChannel}
-
-	go func() {
-		handler.waitForSignalAndCallListener(signalChannel, listener)
-	}()
+	go handler.waitForSignalAndCallListener(signalChannel, listener)
 
 	return &handler
 }
 
 func (h *Handler) waitForSignalAndCallListener(signalChannel chan os.Signal, listener Listener) {
+	defer h.wg.Done()
 	h.wg.Add(1)
 	_, _ = <-signalChannel
 	listener.ShutdownSignalReceived()
-	h.wg.Done()
 }
 
 func (h *Handler) WaitForSignal() {
+	time.Sleep(time.Millisecond * 20)
 	h.wg.Wait()
 }
 
 func (h *Handler) NotifyListenerAndStopWaiting() {
-	h.signalChannel <- syscall.SIGTERM
+	close(h.signalChannel)
 }

@@ -1,10 +1,10 @@
-package v2
+package shutdown
 
 import (
-	health2 "github.com/ThomasObenaus/go-base/shutdown/health"
-	log2 "github.com/ThomasObenaus/go-base/shutdown/log"
+	"github.com/ThomasObenaus/go-base/shutdown/health"
+	"github.com/ThomasObenaus/go-base/shutdown/log"
 	"github.com/ThomasObenaus/go-base/shutdown/signal"
-	stop2 "github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/shutdown/stop"
 	"github.com/rs/zerolog"
 )
 
@@ -15,18 +15,18 @@ type ShutdownHandler struct {
 	health         healthIF
 }
 
-// TODO: how to test this
-func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) *ShutdownHandler {
+// InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
+func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
-		stoppableItems: &stop2.OrderedStoppableList{},
-		log:            log2.ShutdownLog{Logger: logger},
-		health:         &health2.Health{},
+		stoppableItems: &stop.OrderedStoppableList{},
+		log:            log.ShutdownLog{Logger: logger},
+		health:         &health.Health{},
 	}
 
 	for _, stopable := range orderedStopables {
 		err := shutdownHandler.stoppableItems.AddToBack(stopable)
 		if err != nil {
-			logger.Error().Err(err).Msgf("can not stopre Stoppable")
+			logger.Error().Err(err).Msgf("unexpected error adding stoppable to internal list")
 			return nil
 		}
 	}
@@ -37,33 +37,35 @@ func InstallHandler(orderedStopables []stop2.Stoppable, logger zerolog.Logger) *
 	return shutdownHandler
 }
 
-func (h *ShutdownHandler) Register(stoppable stop2.Stoppable, front ...bool) {
-	addToBack := isFirstBoolUndefinedOrFalse(front)
+// Register a Stopable for shutdown handling. Per default the Stopable
+// is added to the front of the list of Stopable's this means the
+// Stopable that was the last one registered will be the first being called for shutdown.
+// If you call Register(stopable,false) you can add this Stopable to the end
+// of the list of registered Stopables.
+func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
+	addToFront := isEmptyOrFirstEntryTrue(front)
 
-	if addToBack {
-		err := h.stoppableItems.AddToBack(stoppable)
+	if addToFront {
+		err := h.stoppableItems.AddToFront(stoppable)
 		if err != nil {
 			serviceName := stoppable.String()
 			h.log.LogCanNotAddService(serviceName)
 		}
 		return
 	}
-	err := h.stoppableItems.AddToFront(stoppable)
+	err := h.stoppableItems.AddToBack(stoppable)
 	if err != nil {
 		serviceName := stoppable.String()
 		h.log.LogCanNotAddService(serviceName)
 	}
 }
 
-func isFirstBoolUndefinedOrFalse(front []bool) bool {
-	addToBack := true
-
-	if len(front) > 0 {
-		if front[0] {
-			addToBack = false
-		}
+func isEmptyOrFirstEntryTrue(list []bool) bool {
+	if len(list) == 0 {
+		return true
 	}
-	return addToBack
+
+	return list[0]
 }
 
 func (h *ShutdownHandler) WaitUntilSignal() {
