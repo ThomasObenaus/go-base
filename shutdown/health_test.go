@@ -1,7 +1,7 @@
 package shutdown
 
 import (
-	"github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/stop"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"testing"
@@ -16,8 +16,8 @@ func Test_is_healthy_when_started(t *testing.T) {
 
 func Test_is_unhealthy_when_shutting_down(t *testing.T) {
 	handler := ShutdownHandler{
-		stoppableItems: &stop.OrderedStoppableList{},
-		logger:         zerolog.Nop(),
+		registry: &stop.Registry{},
+		logger:   zerolog.Nop(),
 	}
 	handler.ShutdownSignalReceived()
 	err := handler.IsHealthy()
@@ -27,8 +27,8 @@ func Test_is_unhealthy_when_shutting_down(t *testing.T) {
 
 func Test_reports_health_status_depending_on_state(t *testing.T) {
 	handler := ShutdownHandler{
-		stoppableItems: &stop.OrderedStoppableList{},
-		logger:         zerolog.Nop(),
+		registry: &stop.Registry{},
+		logger:   zerolog.Nop(),
 	}
 
 	status := handler.String()

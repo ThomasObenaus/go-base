@@ -10,18 +10,18 @@ import (
 type ShutdownHandler struct {
 	logger            zerolog.Logger
 	isShutdownPending atomic.Bool
-	stoppableItems    stopIF
+	registry          stopIF
 	signalHandler     signalHandlerIF
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
 func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
-		stoppableItems: &stop.OrderedStoppableList{},
+		registry: &stop.Registry{},
 	}
 
 	for _, stopable := range orderedStopables {
-		err := shutdownHandler.stoppableItems.AddToBack(stopable)
+		err := shutdownHandler.registry.AddToBack(stopable)
 		if err != nil {
 			logger.Error().Err(err).Msgf("unexpected error adding stoppable to internal list")
 			return nil
@@ -43,14 +43,14 @@ func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
 	addToFront := isEmptyOrFirstEntryTrue(front)
 
 	if addToFront {
-		err := h.stoppableItems.AddToFront(stoppable)
+		err := h.registry.AddToFront(stoppable)
 		if err != nil {
 			serviceName := stoppable.String()
 			h.logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
 		}
 		return
 	}
-	err := h.stoppableItems.AddToBack(stoppable)
+	err := h.registry.AddToBack(stoppable)
 	if err != nil {
 		serviceName := stoppable.String()
 		h.logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
@@ -76,5 +76,5 @@ func (h *ShutdownHandler) ShutdownAllAndStopWaiting() {
 func (h *ShutdownHandler) ShutdownSignalReceived() {
 	h.logger.Info().Msgf("Received %v. Shutting down...", h)
 	h.isShutdownPending.Store(true)
-	h.stoppableItems.StopAllInOrder(h.logger)
+	h.registry.StopAllInOrder(h.logger)
 }

@@ -6,13 +6,13 @@ import (
 	"sync"
 )
 
-type OrderedStoppableList struct {
+type Registry struct {
 	items          []Stoppable
 	mux            sync.Mutex
 	isShuttingDown bool
 }
 
-func (l *OrderedStoppableList) AddToFront(stoppable Stoppable) error {
+func (l *Registry) AddToFront(stoppable Stoppable) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
@@ -24,7 +24,7 @@ func (l *OrderedStoppableList) AddToFront(stoppable Stoppable) error {
 	return nil
 }
 
-func (l *OrderedStoppableList) AddToBack(stoppable1 Stoppable) error {
+func (l *Registry) AddToBack(stoppable1 Stoppable) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
@@ -37,7 +37,7 @@ func (l *OrderedStoppableList) AddToBack(stoppable1 Stoppable) error {
 	return nil
 }
 
-func (l *OrderedStoppableList) StopAllInOrder(logger zerolog.Logger) {
+func (l *Registry) StopAllInOrder(logger zerolog.Logger) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 	l.isShuttingDown = true

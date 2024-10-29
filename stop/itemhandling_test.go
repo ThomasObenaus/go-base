@@ -12,7 +12,7 @@ func Test_can_add_items_to_front(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	synchronizedList := OrderedStoppableList{}
+	synchronizedList := Registry{}
 	item1 := NewMockStoppable(mockCtrl)
 	item2 := NewMockStoppable(mockCtrl)
 	item3 := NewMockStoppable(mockCtrl)
@@ -32,7 +32,7 @@ func Test_can_add_items_to_back(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	synchronizedList := OrderedStoppableList{}
+	synchronizedList := Registry{}
 	item1 := NewMockStoppable(mockCtrl)
 	item2 := NewMockStoppable(mockCtrl)
 	item3 := NewMockStoppable(mockCtrl)
@@ -52,7 +52,7 @@ func Test_does_allow_concurrent_add_to_front(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	synchronizedList := OrderedStoppableList{}
+	synchronizedList := Registry{}
 	waitGroup := sync.WaitGroup{}
 
 	for i := 0; i < 10000; i++ {
@@ -74,7 +74,7 @@ func Test_does_allow_concurrent_add_to_back(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	synchronizedList := OrderedStoppableList{}
+	synchronizedList := Registry{}
 	waitGroup := sync.WaitGroup{}
 
 	for i := 0; i < 10000; i++ {

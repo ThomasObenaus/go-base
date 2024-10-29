@@ -9,7 +9,7 @@ import (
 
 func Test_stores_shutdown_state(t *testing.T) {
 	// GIVEN
-	synchronizedList := OrderedStoppableList{}
+	synchronizedList := Registry{}
 
 	// WHEN
 	synchronizedList.StopAllInOrder(zerolog.Logger{})
@@ -24,7 +24,7 @@ func Test_returns_error_on_add_if_service_is_shutting_down(t *testing.T) {
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
 
-	synchronizedList := OrderedStoppableList{}
+	synchronizedList := Registry{}
 	item1 := NewMockStoppable(mockCtrl)
 
 	// WHEN

@@ -90,13 +90,13 @@ func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t
 	stoppableList.StopAllInOrder(zerolog.Logger{})
 }
 
-func createDefaultStopScenario2(t *testing.T) (OrderedStoppableList, *gomock.Controller, *MockStoppable, *MockStoppable, *MockStoppable) {
+func createDefaultStopScenario2(t *testing.T) (Registry, *gomock.Controller, *MockStoppable, *MockStoppable, *MockStoppable) {
 	mockCtrl := gomock.NewController(t)
 	stoppable1 := NewMockStoppable(mockCtrl)
 	stoppable2 := NewMockStoppable(mockCtrl)
 	stoppable3 := NewMockStoppable(mockCtrl)
 
-	return OrderedStoppableList{
+	return Registry{
 		items: []Stoppable{stoppable3, stoppable2, stoppable1},
 	}, mockCtrl, stoppable1, stoppable2, stoppable3
 }

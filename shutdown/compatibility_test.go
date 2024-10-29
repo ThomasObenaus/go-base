@@ -30,7 +30,7 @@ func Test_ShutdownHandler(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
-	items := &stop.OrderedStoppableList{}
+	items := &stop.Registry{}
 
 	stoppable1 := NewMockStoppable(mockCtrl)
 	err := items.AddToFront(stoppable1)
@@ -40,8 +40,8 @@ func Test_ShutdownHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	h := ShutdownHandler{
-		logger:         zerolog.Nop(),
-		stoppableItems: items,
+		logger:   zerolog.Nop(),
+		registry: items,
 	}
 	shutDownChan := make(chan os.Signal, 1)
 	h.signalHandler = signal.NewSignalHandler(shutDownChan, &h)
@@ -72,8 +72,8 @@ func Test_RegisterFront(t *testing.T) {
 	stoppable1 := NewMockStoppable(mockCtrl)
 	stoppable2 := NewMockStoppable(mockCtrl)
 	h := ShutdownHandler{
-		logger:         zerolog.Nop(),
-		stoppableItems: &stop.OrderedStoppableList{},
+		logger:   zerolog.Nop(),
+		registry: &stop.Registry{},
 	}
 	shutDownChan := make(chan os.Signal, 1)
 	h.signalHandler = signal.NewSignalHandler(shutDownChan, &h)
@@ -110,8 +110,8 @@ func Test_RegisterBack(t *testing.T) {
 	stoppable1 := NewMockStoppable(mockCtrl)
 	stoppable2 := NewMockStoppable(mockCtrl)
 	h := ShutdownHandler{
-		logger:         zerolog.Nop(),
-		stoppableItems: &stop.OrderedStoppableList{},
+		logger:   zerolog.Nop(),
+		registry: &stop.Registry{},
 	}
 	shutDownChan := make(chan os.Signal, 1)
 	h.signalHandler = signal.NewSignalHandler(shutDownChan, &h)

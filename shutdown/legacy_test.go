@@ -14,7 +14,7 @@ func Test_can_register_a_stoppable_in_front(t *testing.T) {
 	list := NewMockstopIF(mockCtrl)
 	stoppable1 := NewMockStoppable(mockCtrl)
 	stoppable2 := NewMockStoppable(mockCtrl)
-	shutdownHandler := ShutdownHandler{stoppableItems: list}
+	shutdownHandler := ShutdownHandler{registry: list}
 
 	// EXPECT
 	list.EXPECT().AddToFront(stoppable1)
@@ -32,7 +32,7 @@ func Test_can_register_a_stoppable_at_back(t *testing.T) {
 
 	list := NewMockstopIF(mockCtrl)
 	stoppable := NewMockStoppable(mockCtrl)
-	shutdownHandler := ShutdownHandler{stoppableItems: list}
+	shutdownHandler := ShutdownHandler{registry: list}
 
 	// EXPECT
 	list.EXPECT().AddToBack(stoppable)
@@ -81,8 +81,8 @@ func Test_informs_stop_that_it_should_stop(t *testing.T) {
 	logger := zerolog.Nop()
 	mockStop := NewMockstopIF(mockCtrl)
 	shutdownHandler := ShutdownHandler{
-		stoppableItems: mockStop,
-		logger:         logger,
+		registry: mockStop,
+		logger:   logger,
 	}
 
 	// EXPECT
