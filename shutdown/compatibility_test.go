@@ -2,10 +2,8 @@ package shutdown
 
 import (
 	"fmt"
-	"github.com/ThomasObenaus/go-base/shutdown/health"
-	"github.com/ThomasObenaus/go-base/shutdown/log"
-	"github.com/ThomasObenaus/go-base/shutdown/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/signal"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -42,8 +40,7 @@ func Test_ShutdownHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	h := ShutdownHandler{
-		log:            log.ShutdownLog{Logger: zerolog.Nop()},
-		health:         &health.Health{},
+		logger:         zerolog.Nop(),
 		stoppableItems: items,
 	}
 	shutDownChan := make(chan os.Signal, 1)
@@ -75,8 +72,7 @@ func Test_RegisterFront(t *testing.T) {
 	stopable1 := NewMockStoppable(mockCtrl)
 	stopable2 := NewMockStoppable(mockCtrl)
 	h := ShutdownHandler{
-		log:            log.ShutdownLog{Logger: zerolog.Nop()},
-		health:         &health.Health{},
+		logger:         zerolog.Nop(),
 		stoppableItems: &stop.OrderedStoppableList{},
 	}
 	shutDownChan := make(chan os.Signal, 1)
@@ -114,8 +110,7 @@ func Test_RegisterBack(t *testing.T) {
 	stopable1 := NewMockStoppable(mockCtrl)
 	stopable2 := NewMockStoppable(mockCtrl)
 	h := ShutdownHandler{
-		log:            log.ShutdownLog{Logger: zerolog.Nop()},
-		health:         &health.Health{},
+		logger:         zerolog.Nop(),
 		stoppableItems: &stop.OrderedStoppableList{},
 	}
 	shutDownChan := make(chan os.Signal, 1)

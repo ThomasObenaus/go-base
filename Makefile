@@ -24,8 +24,8 @@ gen-mocks: sep ## Generates test doubles (mocks).
 	@mockgen -source=health/check.go -destination test/mocks/health/mock_check.go
 	@mockgen -source=shutdown/stop/interfaces.go -destination shutdown/stop/mock_stop_test.go -package stop
 	@mockgen -source=shutdown/stop/interfaces.go -destination shutdown/mock_stop_test.go -package shutdown
-	@mockgen -source=signal/signal.go -destination signal/mock_signal_test.go -package signal
 	@mockgen -source=shutdown/interfaces.go -destination shutdown/mock_interfaces_test.go -package shutdown
+	@mockgen -source=signal/signal.go -destination signal/mock_signal_test.go -package signal
 
 tools: sep ## Installs needed tools
 	@echo "--> Install needed tools"

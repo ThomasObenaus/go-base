@@ -1,24 +1,23 @@
 package shutdown
 
 import (
-	"github.com/ThomasObenaus/go-base/shutdown/health"
 	"github.com/ThomasObenaus/go-base/shutdown/stop"
 	"github.com/ThomasObenaus/go-base/signal"
 	"github.com/rs/zerolog"
+	"sync/atomic"
 )
 
 type ShutdownHandler struct {
-	logger         zerolog.Logger
-	stoppableItems stopIF
-	signalHandler  signalHandlerIF
-	health         healthIF
+	logger            zerolog.Logger
+	isShutdownPending atomic.Bool
+	stoppableItems    stopIF
+	signalHandler     signalHandlerIF
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
 func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
 		stoppableItems: &stop.OrderedStoppableList{},
-		health:         &health.Health{},
 	}
 
 	for _, stopable := range orderedStopables {
@@ -76,14 +75,6 @@ func (h *ShutdownHandler) ShutdownAllAndStopWaiting() {
 
 func (h *ShutdownHandler) ShutdownSignalReceived() {
 	h.logger.Info().Msgf("Received %v. Shutting down...", h)
-	h.health.ShutdownSignalReceived()
+	h.isShutdownPending.Store(true)
 	h.stoppableItems.StopAllInOrder(h.logger)
-}
-
-func (h *ShutdownHandler) IsHealthy() error {
-	return h.health.IsHealthy()
-}
-
-func (h *ShutdownHandler) String() string {
-	return h.health.String()
 }

@@ -15,9 +15,3 @@ type signalHandlerIF interface {
 	WaitForSignal()
 	NotifyListenerAndStopWaiting()
 }
-
-type healthIF interface {
-	ShutdownSignalReceived()
-	IsHealthy() error
-	String() string
-}
