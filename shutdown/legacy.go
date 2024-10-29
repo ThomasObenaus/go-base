@@ -2,16 +2,15 @@ package shutdown
 
 import (
 	"github.com/ThomasObenaus/go-base/shutdown/health"
-	"github.com/ThomasObenaus/go-base/shutdown/log"
 	"github.com/ThomasObenaus/go-base/shutdown/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/stop"
 	"github.com/rs/zerolog"
 )
 
 type ShutdownHandler struct {
+	logger         zerolog.Logger
 	stoppableItems stopIF
 	signalHandler  signalHandlerIF
-	log            logIF
 	health         healthIF
 }
 
@@ -19,7 +18,6 @@ type ShutdownHandler struct {
 func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
 		stoppableItems: &stop.OrderedStoppableList{},
-		log:            log.ShutdownLog{Logger: logger},
 		health:         &health.Health{},
 	}
 
@@ -49,14 +47,14 @@ func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
 		err := h.stoppableItems.AddToFront(stoppable)
 		if err != nil {
 			serviceName := stoppable.String()
-			h.log.LogCanNotAddService(serviceName)
+			h.logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
 		}
 		return
 	}
 	err := h.stoppableItems.AddToBack(stoppable)
 	if err != nil {
 		serviceName := stoppable.String()
-		h.log.LogCanNotAddService(serviceName)
+		h.logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
 	}
 }
 
@@ -77,9 +75,9 @@ func (h *ShutdownHandler) ShutdownAllAndStopWaiting() {
 }
 
 func (h *ShutdownHandler) ShutdownSignalReceived() {
-	h.log.ShutdownSignalReceived()
+	h.logger.Info().Msgf("Received %v. Shutting down...", h)
 	h.health.ShutdownSignalReceived()
-	h.stoppableItems.StopAllInOrder(h.log)
+	h.stoppableItems.StopAllInOrder(h.logger)
 }
 
 func (h *ShutdownHandler) IsHealthy() error {

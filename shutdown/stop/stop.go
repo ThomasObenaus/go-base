@@ -2,6 +2,7 @@ package stop
 
 import (
 	"errors"
+	"github.com/rs/zerolog"
 	"sync"
 )
 
@@ -36,22 +37,22 @@ func (l *OrderedStoppableList) AddToBack(stoppable1 Stoppable) error {
 	return nil
 }
 
-func (l *OrderedStoppableList) StopAllInOrder(listener Listener) {
+func (l *OrderedStoppableList) StopAllInOrder(logger zerolog.Logger) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 	l.isShuttingDown = true
-	stop(l.items, listener)
+	stop(l.items, logger)
 }
 
-func stop(stoppableItems []Stoppable, listener Listener) {
+func stop(stoppableItems []Stoppable, logger zerolog.Logger) {
 	for _, stoppable := range stoppableItems {
 		serviceName := stoppable.String()
-		listener.ServiceWillBeStopped(serviceName)
+		logger.Debug().Msgf("Stopping %s ...", serviceName)
 		err := stoppable.Stop()
 		if err != nil {
-			listener.ServiceWasStopped(serviceName, err)
+			logger.Error().Err(err).Bool("no_alert", true).Msgf("Failed stopping '%s'", serviceName)
 			continue
 		}
-		listener.ServiceWasStopped(serviceName)
+		logger.Info().Msgf("%s stopped.", serviceName)
 	}
 }

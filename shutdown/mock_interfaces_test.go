@@ -9,6 +9,7 @@ import (
 
 	stop "github.com/ThomasObenaus/go-base/shutdown/stop"
 	gomock "github.com/golang/mock/gomock"
+	zerolog "github.com/rs/zerolog"
 )
 
 // MockstopIF is a mock of stopIF interface.
@@ -63,15 +64,15 @@ func (mr *MockstopIFMockRecorder) AddToFront(stoppable interface{}) *gomock.Call
 }
 
 // StopAllInOrder mocks base method.
-func (m *MockstopIF) StopAllInOrder(listener stop.Listener) {
+func (m *MockstopIF) StopAllInOrder(logger zerolog.Logger) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "StopAllInOrder", listener)
+	m.ctrl.Call(m, "StopAllInOrder", logger)
 }
 
 // StopAllInOrder indicates an expected call of StopAllInOrder.
-func (mr *MockstopIFMockRecorder) StopAllInOrder(listener interface{}) *gomock.Call {
+func (mr *MockstopIFMockRecorder) StopAllInOrder(logger interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopAllInOrder", reflect.TypeOf((*MockstopIF)(nil).StopAllInOrder), listener)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StopAllInOrder", reflect.TypeOf((*MockstopIF)(nil).StopAllInOrder), logger)
 }
 
 // MocksignalHandlerIF is a mock of signalHandlerIF interface.
@@ -119,82 +120,6 @@ func (m *MocksignalHandlerIF) WaitForSignal() {
 func (mr *MocksignalHandlerIFMockRecorder) WaitForSignal() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WaitForSignal", reflect.TypeOf((*MocksignalHandlerIF)(nil).WaitForSignal))
-}
-
-// MocklogIF is a mock of logIF interface.
-type MocklogIF struct {
-	ctrl     *gomock.Controller
-	recorder *MocklogIFMockRecorder
-}
-
-// MocklogIFMockRecorder is the mock recorder for MocklogIF.
-type MocklogIFMockRecorder struct {
-	mock *MocklogIF
-}
-
-// NewMocklogIF creates a new mock instance.
-func NewMocklogIF(ctrl *gomock.Controller) *MocklogIF {
-	mock := &MocklogIF{ctrl: ctrl}
-	mock.recorder = &MocklogIFMockRecorder{mock}
-	return mock
-}
-
-// EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MocklogIF) EXPECT() *MocklogIFMockRecorder {
-	return m.recorder
-}
-
-// LogCanNotAddService mocks base method.
-func (m *MocklogIF) LogCanNotAddService(serviceName string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "LogCanNotAddService", serviceName)
-}
-
-// LogCanNotAddService indicates an expected call of LogCanNotAddService.
-func (mr *MocklogIFMockRecorder) LogCanNotAddService(serviceName interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogCanNotAddService", reflect.TypeOf((*MocklogIF)(nil).LogCanNotAddService), serviceName)
-}
-
-// ServiceWasStopped mocks base method.
-func (m *MocklogIF) ServiceWasStopped(name string, err ...error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{name}
-	for _, a := range err {
-		varargs = append(varargs, a)
-	}
-	m.ctrl.Call(m, "ServiceWasStopped", varargs...)
-}
-
-// ServiceWasStopped indicates an expected call of ServiceWasStopped.
-func (mr *MocklogIFMockRecorder) ServiceWasStopped(name interface{}, err ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{name}, err...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServiceWasStopped", reflect.TypeOf((*MocklogIF)(nil).ServiceWasStopped), varargs...)
-}
-
-// ServiceWillBeStopped mocks base method.
-func (m *MocklogIF) ServiceWillBeStopped(name string) {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ServiceWillBeStopped", name)
-}
-
-// ServiceWillBeStopped indicates an expected call of ServiceWillBeStopped.
-func (mr *MocklogIFMockRecorder) ServiceWillBeStopped(name interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ServiceWillBeStopped", reflect.TypeOf((*MocklogIF)(nil).ServiceWillBeStopped), name)
-}
-
-// ShutdownSignalReceived mocks base method.
-func (m *MocklogIF) ShutdownSignalReceived() {
-	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "ShutdownSignalReceived")
-}
-
-// ShutdownSignalReceived indicates an expected call of ShutdownSignalReceived.
-func (mr *MocklogIFMockRecorder) ShutdownSignalReceived() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ShutdownSignalReceived", reflect.TypeOf((*MocklogIF)(nil).ShutdownSignalReceived))
 }
 
 // MockhealthIF is a mock of healthIF interface.

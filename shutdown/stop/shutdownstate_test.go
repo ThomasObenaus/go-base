@@ -2,20 +2,17 @@ package stop
 
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func Test_stores_shutdown_state(t *testing.T) {
 	// GIVEN
-	mockCtrl := gomock.NewController(t)
-	defer mockCtrl.Finish()
-	listener := NewMockListener(mockCtrl)
-
 	synchronizedList := OrderedStoppableList{}
 
 	// WHEN
-	synchronizedList.StopAllInOrder(listener)
+	synchronizedList.StopAllInOrder(zerolog.Logger{})
 
 	// THEN
 	value := synchronizedList.isShuttingDown
