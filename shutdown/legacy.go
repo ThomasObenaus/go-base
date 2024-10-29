@@ -2,8 +2,8 @@ package shutdown
 
 import (
 	"github.com/ThomasObenaus/go-base/shutdown/health"
-	"github.com/ThomasObenaus/go-base/shutdown/signal"
 	"github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/signal"
 	"github.com/rs/zerolog"
 )
 
