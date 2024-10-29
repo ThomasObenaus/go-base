@@ -1,7 +1,7 @@
 package shutdown
 
 import (
-	"github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/stop"
 	"github.com/rs/zerolog"
 )
 

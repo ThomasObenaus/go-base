@@ -7,7 +7,7 @@ package shutdown
 import (
 	reflect "reflect"
 
-	stop "github.com/ThomasObenaus/go-base/shutdown/stop"
+	stop "github.com/ThomasObenaus/go-base/stop"
 	gomock "github.com/golang/mock/gomock"
 	zerolog "github.com/rs/zerolog"
 )
