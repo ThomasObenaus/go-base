@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -24,7 +26,8 @@ func Test_all_stoppable_items_are_stopped_in_order_given(t *testing.T) {
 		stoppable1.EXPECT().Stop())
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Nop())
+	err := stoppableList.StopAllInOrder(zerolog.Nop())
+	require.NoError(t, err)
 }
 
 func Test_listener_is_called_when_a_service_is_about_to_be_stopped(t *testing.T) {
@@ -45,7 +48,8 @@ func Test_listener_is_called_when_a_service_is_about_to_be_stopped(t *testing.T)
 	)
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Nop())
+	err := stoppableList.StopAllInOrder(zerolog.Nop())
+	require.NoError(t, err)
 }
 
 func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
@@ -66,7 +70,8 @@ func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
 	)
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Nop())
+	err := stoppableList.StopAllInOrder(zerolog.Nop())
+	require.NoError(t, err)
 }
 
 func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t *testing.T) {
@@ -87,7 +92,18 @@ func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t
 	)
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Nop())
+	err := stoppableList.StopAllInOrder(zerolog.Nop())
+	require.NoError(t, err)
+}
+
+func Test_returns_error_if_stop_is_in_progress_or_complete(t *testing.T) {
+	stoppableList := Registry{}
+
+	err := stoppableList.StopAllInOrder(zerolog.Nop())
+	assert.NoError(t, err)
+
+	err = stoppableList.StopAllInOrder(zerolog.Nop())
+	assert.Error(t, err)
 }
 
 func createDefaultStopScenario2(t *testing.T) (Registry, *gomock.Controller, *MockStoppable, *MockStoppable, *MockStoppable) {

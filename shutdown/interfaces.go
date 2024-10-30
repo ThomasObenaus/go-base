@@ -8,7 +8,7 @@ import (
 type stopIF interface {
 	AddToFront(stoppable stop.Stoppable) error
 	AddToBack(stoppable1 stop.Stoppable) error
-	StopAllInOrder(logger zerolog.Logger)
+	StopAllInOrder(logger zerolog.Logger) error
 }
 
 type signalHandlerIF interface {

@@ -2,6 +2,7 @@ package stop
 
 import (
 	"errors"
+	"fmt"
 	"github.com/rs/zerolog"
 	"sync"
 )
@@ -37,11 +38,18 @@ func (l *Registry) AddToBack(stoppable1 Stoppable) error {
 	return nil
 }
 
-func (l *Registry) StopAllInOrder(logger zerolog.Logger) {
+func (l *Registry) StopAllInOrder(logger zerolog.Logger) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
+
+	if l.shutdownInProgressOrComplete {
+		return fmt.Errorf("stopping in progress or completed already")
+	}
+
 	l.shutdownInProgressOrComplete = true
 	stop(l.items, logger)
+
+	return nil
 }
 
 func stop(stoppableItems []Stoppable, logger zerolog.Logger) {

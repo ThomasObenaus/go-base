@@ -76,5 +76,8 @@ func (h *ShutdownHandler) ShutdownAllAndStopWaiting() {
 func (h *ShutdownHandler) ShutdownSignalReceived() {
 	h.logger.Info().Msgf("Received %v. Shutting down...", h)
 	h.isShutdownPending.Store(true)
-	h.registry.StopAllInOrder(h.logger)
+	err := h.registry.StopAllInOrder(h.logger)
+	if err != nil {
+		h.logger.Error().Msgf("could not stop services: %v", err)
+	}
 }
