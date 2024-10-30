@@ -24,7 +24,7 @@ func Test_all_stoppable_items_are_stopped_in_order_given(t *testing.T) {
 		stoppable1.EXPECT().Stop())
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Logger{})
+	stoppableList.StopAllInOrder(zerolog.Nop())
 }
 
 func Test_listener_is_called_when_a_service_is_about_to_be_stopped(t *testing.T) {
@@ -45,7 +45,7 @@ func Test_listener_is_called_when_a_service_is_about_to_be_stopped(t *testing.T)
 	)
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Logger{})
+	stoppableList.StopAllInOrder(zerolog.Nop())
 }
 
 func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
@@ -66,7 +66,7 @@ func Test_listener_is_called_when_a_service_was_stopped(t *testing.T) {
 	)
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Logger{})
+	stoppableList.StopAllInOrder(zerolog.Nop())
 }
 
 func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t *testing.T) {
@@ -87,7 +87,7 @@ func Test_listener_is_called_when_a_service_could_not_be_stopped_without_error(t
 	)
 
 	// WHEN
-	stoppableList.StopAllInOrder(zerolog.Logger{})
+	stoppableList.StopAllInOrder(zerolog.Nop())
 }
 
 func createDefaultStopScenario2(t *testing.T) (Registry, *gomock.Controller, *MockStoppable, *MockStoppable, *MockStoppable) {

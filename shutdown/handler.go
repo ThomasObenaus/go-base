@@ -20,8 +20,8 @@ func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *S
 		registry: &stop.Registry{},
 	}
 
-	for _, stopable := range orderedStopables {
-		err := shutdownHandler.registry.AddToBack(stopable)
+	for _, stoppable := range orderedStopables {
+		err := shutdownHandler.registry.AddToBack(stoppable)
 		if err != nil {
 			logger.Error().Err(err).Msgf("unexpected error adding stoppable to internal list")
 			return nil

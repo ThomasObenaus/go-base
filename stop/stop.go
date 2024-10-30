@@ -7,16 +7,16 @@ import (
 )
 
 type Registry struct {
-	items          []Stoppable
-	mux            sync.Mutex
-	isShuttingDown bool
+	items                        []Stoppable
+	mux                          sync.Mutex
+	shutdownInProgressOrComplete bool
 }
 
 func (l *Registry) AddToFront(stoppable Stoppable) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
-	if l.isShuttingDown {
+	if l.shutdownInProgressOrComplete {
 		return errors.New("can not add services while shutting down in progress")
 	}
 
@@ -28,7 +28,7 @@ func (l *Registry) AddToBack(stoppable1 Stoppable) error {
 	l.mux.Lock()
 	defer l.mux.Unlock()
 
-	if l.isShuttingDown {
+	if l.shutdownInProgressOrComplete {
 		return errors.New("can not add services while shutting down in progress")
 	}
 
@@ -40,7 +40,7 @@ func (l *Registry) AddToBack(stoppable1 Stoppable) error {
 func (l *Registry) StopAllInOrder(logger zerolog.Logger) {
 	l.mux.Lock()
 	defer l.mux.Unlock()
-	l.isShuttingDown = true
+	l.shutdownInProgressOrComplete = true
 	stop(l.items, logger)
 }
 

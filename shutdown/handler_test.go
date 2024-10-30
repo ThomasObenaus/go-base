@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func Test_can_register_a_stoppable_in_front(t *testing.T) {
+func Test_delegates_to_stop_handler__add_to_front(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -25,7 +25,7 @@ func Test_can_register_a_stoppable_in_front(t *testing.T) {
 	shutdownHandler.Register(stoppable2)
 }
 
-func Test_can_register_a_stoppable_at_back(t *testing.T) {
+func Test_delegates_to_stop_handler__add_to_back(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -41,7 +41,7 @@ func Test_can_register_a_stoppable_at_back(t *testing.T) {
 	shutdownHandler.Register(stoppable, false)
 }
 
-func Test_can_wait_for_signal(t *testing.T) {
+func Test_delegates_to_signal_handler__wait_until_signal(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -57,7 +57,7 @@ func Test_can_wait_for_signal(t *testing.T) {
 	shutdownHandler.WaitUntilSignal()
 }
 
-func Test_informs_signal_handler_when_to_stop_waiting_for_signal_and_shutdown(t *testing.T) {
+func Test_delegates_to_signal_handler__shutdown_all_and_stop_waiting(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
@@ -73,7 +73,7 @@ func Test_informs_signal_handler_when_to_stop_waiting_for_signal_and_shutdown(t 
 	shutdownHandler.ShutdownAllAndStopWaiting()
 }
 
-func Test_informs_stop_that_it_should_stop(t *testing.T) {
+func Test_delegates_to_signal_handler__shutdown_signal_received(t *testing.T) {
 	// GIVEN
 	mockCtrl := gomock.NewController(t)
 	defer mockCtrl.Finish()
