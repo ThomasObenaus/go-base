@@ -3,7 +3,6 @@ jobs:
   build:
     docker:
       - image: cimg/go:1.23.2
-    working_directory: /go/src/github.com/thomasobenaus/go-base
     steps:
       - checkout
       - run: make all
