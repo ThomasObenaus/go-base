@@ -64,9 +64,11 @@ func (mr *MockstopIFMockRecorder) AddToFront(stoppable interface{}) *gomock.Call
 }
 
 // StopAllInOrder mocks base method.
-func (m *MockstopIF) StopAllInOrder(logger zerolog.Logger) {
+func (m *MockstopIF) StopAllInOrder(logger zerolog.Logger) error {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "StopAllInOrder", logger)
+	ret := m.ctrl.Call(m, "StopAllInOrder", logger)
+	ret0, _ := ret[0].(error)
+	return ret0
 }
 
 // StopAllInOrder indicates an expected call of StopAllInOrder.
