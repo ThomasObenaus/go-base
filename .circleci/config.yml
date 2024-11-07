@@ -2,8 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.17
-    working_directory: /go/src/github.com/thomasobenaus/go-base
+      - image: cimg/go:1.23.2
     steps:
       - checkout
       - run: make all
