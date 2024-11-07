@@ -1,35 +1,41 @@
 package shutdown
 
 import (
-	"testing"
-
+	"github.com/ThomasObenaus/go-base/stop"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
-func Test_IsHealthyTrue(t *testing.T) {
+func Test_is_healthy_when_started(t *testing.T) {
+	handler := ShutdownHandler{}
+	err := handler.IsHealthy()
 
-	// GIVEN
-	var logger zerolog.Logger
-	h := InstallHandler(nil, logger)
-
-	// WHEN
-	err := h.IsHealthy()
-
-	// THEN
 	assert.NoError(t, err)
 }
 
-func Test_IsHealthyFalse(t *testing.T) {
+func Test_is_unhealthy_when_shutting_down(t *testing.T) {
+	handler := ShutdownHandler{
+		registry: &stop.Registry{},
+		logger:   zerolog.Nop(),
+	}
+	handler.ShutdownSignalReceived()
+	err := handler.IsHealthy()
 
-	// GIVEN
-	var logger zerolog.Logger
-	h := InstallHandler(nil, logger)
-
-	// WHEN
-	h.isShutdownPending.Store(true)
-	err := h.IsHealthy()
-
-	// THEN
 	assert.Error(t, err)
+}
+
+func Test_reports_health_status_depending_on_state(t *testing.T) {
+	handler := ShutdownHandler{
+		registry: &stop.Registry{},
+		logger:   zerolog.Nop(),
+	}
+
+	status := handler.String()
+	assert.Equal(t, "ShutdownHandler (shutdown in progress=false)", status)
+
+	handler.ShutdownSignalReceived()
+
+	status = handler.String()
+	assert.Equal(t, "ShutdownHandler (shutdown in progress=true)", status)
 }
