@@ -1,30 +1,27 @@
 package shutdown
 
 import (
-	"github.com/ThomasObenaus/go-base/shutdown/health"
-	"github.com/ThomasObenaus/go-base/shutdown/log"
-	"github.com/ThomasObenaus/go-base/shutdown/signal"
-	"github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/signal"
+	"github.com/ThomasObenaus/go-base/stop"
 	"github.com/rs/zerolog"
+	"sync/atomic"
 )
 
 type ShutdownHandler struct {
-	stoppableItems stopIF
-	signalHandler  signalHandlerIF
-	log            logIF
-	health         healthIF
+	logger            zerolog.Logger
+	isShutdownPending atomic.Bool
+	registry          stopIF
+	signalHandler     signalHandlerIF
 }
 
 // InstallHandler installs a handler for syscall.SIGINT, syscall.SIGTERM
 func InstallHandler(orderedStopables []stop.Stoppable, logger zerolog.Logger) *ShutdownHandler {
 	shutdownHandler := &ShutdownHandler{
-		stoppableItems: &stop.OrderedStoppableList{},
-		log:            log.ShutdownLog{Logger: logger},
-		health:         &health.Health{},
+		registry: &stop.Registry{},
 	}
 
-	for _, stopable := range orderedStopables {
-		err := shutdownHandler.stoppableItems.AddToBack(stopable)
+	for _, stoppable := range orderedStopables {
+		err := shutdownHandler.registry.AddToBack(stoppable)
 		if err != nil {
 			logger.Error().Err(err).Msgf("unexpected error adding stoppable to internal list")
 			return nil
@@ -46,17 +43,17 @@ func (h *ShutdownHandler) Register(stoppable stop.Stoppable, front ...bool) {
 	addToFront := isEmptyOrFirstEntryTrue(front)
 
 	if addToFront {
-		err := h.stoppableItems.AddToFront(stoppable)
+		err := h.registry.AddToFront(stoppable)
 		if err != nil {
 			serviceName := stoppable.String()
-			h.log.LogCanNotAddService(serviceName)
+			h.logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
 		}
 		return
 	}
-	err := h.stoppableItems.AddToBack(stoppable)
+	err := h.registry.AddToBack(stoppable)
 	if err != nil {
 		serviceName := stoppable.String()
-		h.log.LogCanNotAddService(serviceName)
+		h.logger.Error().Msgf("can not add service '%s' to shutdown list while shutting down", serviceName)
 	}
 }
 
@@ -77,15 +74,10 @@ func (h *ShutdownHandler) ShutdownAllAndStopWaiting() {
 }
 
 func (h *ShutdownHandler) ShutdownSignalReceived() {
-	h.log.ShutdownSignalReceived()
-	h.health.ShutdownSignalReceived()
-	h.stoppableItems.StopAllInOrder(h.log)
-}
-
-func (h *ShutdownHandler) IsHealthy() error {
-	return h.health.IsHealthy()
-}
-
-func (h *ShutdownHandler) String() string {
-	return h.health.String()
+	h.logger.Info().Msgf("Received %v. Shutting down...", h)
+	h.isShutdownPending.Store(true)
+	err := h.registry.StopAllInOrder(h.logger)
+	if err != nil {
+		h.logger.Error().Msgf("could not stop services: %v", err)
+	}
 }

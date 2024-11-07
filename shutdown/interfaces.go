@@ -1,29 +1,17 @@
 package shutdown
 
 import (
-	"github.com/ThomasObenaus/go-base/shutdown/stop"
+	"github.com/ThomasObenaus/go-base/stop"
+	"github.com/rs/zerolog"
 )
 
 type stopIF interface {
 	AddToFront(stoppable stop.Stoppable) error
 	AddToBack(stoppable1 stop.Stoppable) error
-	StopAllInOrder(listener stop.Listener)
+	StopAllInOrder(logger zerolog.Logger) error
 }
 
 type signalHandlerIF interface {
 	WaitForSignal()
 	NotifyListenerAndStopWaiting()
-}
-
-type logIF interface {
-	ShutdownSignalReceived()
-	ServiceWillBeStopped(name string)
-	ServiceWasStopped(name string, err ...error)
-	LogCanNotAddService(serviceName string)
-}
-
-type healthIF interface {
-	ShutdownSignalReceived()
-	IsHealthy() error
-	String() string
 }
